@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Гроссбух — первый запуск</title>
+<style>
+:root{
+  --paper:#E9EDF1; --card:#FFFFFF; --ink:#0F1A21; --soft:#5C6C78;
+  --line:#D8E0E7; --accent:#0E6E62; --accent-bg:#E0EFEC;
+  --clay:#A9501F; --clay-bg:#F6E9E1; --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--paper)}
+body{color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:430px;margin:0 auto;padding:0 14px 130px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+
+/* прогресс */
+.prog{display:flex;gap:5px;padding:20px 2px 0}
+.prog i{flex:1;height:3px;background:var(--line);border-radius:2px;transition:.25s}
+.prog i.on{background:var(--accent)}
+.prog i.done{background:var(--accent);opacity:.4}
+
+.step{padding:26px 2px 0}
+.step h1{font-size:23px;font-weight:650;letter-spacing:-.02em;margin:0 0 8px;line-height:1.25}
+.step p{color:var(--soft);font-size:14px;margin:0 0 20px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.lbl{display:block;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--soft);margin-bottom:9px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:10px 13px;
+      font-size:14px;cursor:pointer;color:var(--ink);transition:.12s}
+.chip:active{transform:scale(.97)}
+.chip.on{border-color:var(--accent);background:var(--accent-bg);font-weight:600}
+.chip small{color:var(--soft);font-size:11px;margin-left:5px}
+.chip.on small{color:var(--accent)}
+
+input,select{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px 12px;
+             font:15px system-ui,sans-serif;outline:none;background:var(--card);color:var(--ink)}
+input:focus,select:focus{border-color:var(--accent)}
+input.num{font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums;text-align:right}
+.row{display:flex;gap:8px;margin-bottom:9px}
+.row input:first-child{flex:1}
+.row input.num{width:120px;flex:none}
+.hint{font-size:12px;color:var(--soft);margin:-3px 0 12px}
+
+.add{width:100%;border:1px dashed var(--line);background:none;color:var(--soft);
+     border-radius:10px;padding:12px;font-size:14px;cursor:pointer}
+.add:active{border-color:var(--accent);color:var(--accent)}
+
+/* добавленные позиции */
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;
+      padding:11px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:none}
+.item .n{font-size:14px;min-width:0}
+.item .n small{display:block;color:var(--soft);font-size:11px;margin-top:2px}
+.item .v{font-size:14px;font-weight:600;white-space:nowrap}
+.item .x{border:none;background:none;color:var(--soft);font-size:19px;cursor:pointer;padding:0 2px;line-height:1}
+.none{color:var(--soft);font-size:13px;padding:2px}
+
+/* итог */
+.sum-row{display:flex;justify-content:space-between;padding:9px 0;font-size:14px}
+.sum-row.tot{border-top:1px solid var(--line);margin-top:6px;padding-top:12px;font-weight:650;font-size:16px}
+.sum-row .v{font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.capital{background:var(--ink);color:#fff;border-radius:var(--r);padding:18px;margin-bottom:12px}
+.capital .k{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:#8FA5B0}
+.capital .v{font-size:30px;font-weight:600;margin-top:6px;font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.capital .s{font-size:12px;color:#8FA5B0;margin-top:7px;line-height:1.4}
+
+/* проводки */
+.led-head{width:100%;background:none;border:none;color:var(--soft);font-size:13px;padding:13px 2px;cursor:pointer}
+.ledger{background:#0F1A21;color:#C8D6DE;border-radius:var(--r);padding:14px;margin-bottom:12px;
+        font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;overflow-x:auto}
+.ledger .k{color:#5C7A88}
+.ledger .d{color:#7FD1C1}
+.ledger .c{color:#E8B08A}
+.ledger table{border-collapse:collapse;width:100%}
+.ledger td{padding:1px 0}
+.ledger td.n{text-align:right;padding-left:12px;white-space:nowrap}
+.ledger hr{border:none;border-top:1px solid #24333D;margin:8px 0}
+.inv{display:flex;justify-content:space-between;color:#7FD1C1}
+
+/* низ */
+.bar{position:fixed;left:0;right:0;bottom:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+     background:linear-gradient(to top,var(--paper) 62%,transparent);z-index:5}
+.bar .in{max-width:430px;margin:0 auto;display:flex;gap:9px;flex-direction:column}
+.big{width:100%;border:none;border-radius:12px;padding:16px;background:var(--accent);
+     color:#fff;font-size:16px;font-weight:600;cursor:pointer}
+.big:disabled{background:#B8C4CC}
+.big:active:not(:disabled){opacity:.88}
+.skip{width:100%;border:none;background:none;color:var(--soft);font-size:14px;padding:4px;cursor:pointer}
+.skip:active{color:var(--accent)}
+#toast{position:fixed;left:50%;bottom:120px;transform:translate(-50%,60px);background:var(--ink);color:#fff;
+       padding:12px 18px;border-radius:11px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:99}
+#toast.show{transform:translate(-50%,0);opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="prog" id="prog"></div>
+  <div class="step" id="step"></div>
+</div>
+<div class="bar"><div class="in">
+  <button class="big" id="next">Далее</button>
+  <button class="skip" id="skip">Пропустить</button>
+</div></div>
+<div id="toast"></div>
+
+<script>
+/* ═══ валюты ═══ */
+const POPULAR=[['RUB','₽','Рубль'],['EUR','€','Евро'],['USD','$','Доллар США'],
+               ['GBP','£','Фунт'],['CNY','¥','Юань'],['KZT','₸','Тенге']];
+const ALL=[...POPULAR,['CHF','Fr','Франк'],['TRY','₺','Лира'],['AED','د.إ','Дирхам'],
+           ['RSD','дин','Динар'],['GEL','₾','Лари'],['AMD','֏','Драм'],
+           ['MNT','₮','Тугрик'],['LAK','₭','Кип'],['NPR','₨','Непальская рупия'],
+           ['INR','₹','Рупия'],['THB','฿','Бат'],['IDR','Rp','Рупия Индонезии']];
+
+/* ═══ состояние ═══ */
+const S={base:null, cash:[], cards:[], savings:[], property:[], debtors:[], creditors:[]};
+let step=0, curSearch='';
+
+const $=s=>document.querySelector(s);
+const fmt=n=>(n||0).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
+const parse=s=>{const v=parseFloat(String(s).replace(/\s/g,'').replace(',','.'));return isNaN(v)?0:v};
+const sign=()=>S.base?S.base[1]:'';
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+
+/* ═══ описание шагов ═══ */
+const STEPS=[
+ {id:'cur',   title:'В какой валюте вести учёт?',
+              sub:'Это основная валюта отчётов. Позже её не поменять, но операции в других валютах вести можно.'},
+ {id:'cash',  title:'Сколько у вас денег?',
+              sub:'Наличные и счета в банках. Просто откройте банковское приложение и перепишите остатки.',
+              key:'cash', ph:['Например, Сбербанк','0,00'], hint:'Названия любые — так, как вам удобно их узнавать.'},
+ {id:'cards', title:'Есть кредитные карты?',
+              sub:'Нужны две цифры: лимит по карте и сколько на ней сейчас доступно.',
+              key:'cards'},
+ {id:'save',  title:'Есть вклады или инвестиции?',
+              sub:'Вклады, брокерский счёт, акции. Достаточно текущей суммы — вспоминать, за сколько покупали, не нужно.',
+              key:'savings', ph:['Например, Вклад в Тинькофф','0,00']},
+ {id:'prop',  title:'Какое у вас имущество?',
+              sub:'Квартира, машина, техника — то, что вы считаете своим капиталом. Оценка ваша, точность не важна.',
+              key:'property', ph:['Например, Квартира','0,00'],
+              hint:'Повседневные вещи вносить не нужно — только то, что заметно влияет на ваше состояние.'},
+ {id:'debt',  title:'Вам кто-нибудь должен?',
+              sub:'Деньги, которые вы дали в долг и ждёте обратно.',
+              key:'debtors', ph:['Имя','0,00']},
+ {id:'cred',  title:'А вы кому-нибудь должны?',
+              sub:'Кредиты, ипотека, долги друзьям. Нужен остаток долга на сегодня.',
+              key:'creditors', ph:['Например, Ипотека','0,00']},
+ {id:'done',  title:'Готово', sub:''}
+];
+
+/* ═══ прогресс ═══ */
+function drawProg(){
+  $('#prog').innerHTML=STEPS.map((s,i)=>
+    `<i class="${i===step?'on':(i<step?'done':'')}"></i>`).join('');
+}
+
+/* ═══ общий рендер списка позиций ═══ */
+function itemsHTML(arr,fmtItem){
+  if(!arr.length)return '<div class="none">Пока ничего не добавлено</div>';
+  return arr.map((it,i)=>{
+    const f=fmtItem(it);
+    return `<div class="item">
+      <div class="n">${f.name}${f.sub?`<small>${f.sub}</small>`:''}</div>
+      <div class="v mono">${f.val}</div>
+      <button class="x" data-i="${i}">×</button></div>`;
+  }).join('');
+}
+function bindRemove(arr){
+  document.querySelectorAll('.item .x').forEach(b=>{
+    b.onclick=()=>{arr.splice(+b.dataset.i,1);render()};
+  });
+}
+
+/* ═══ рендер шага ═══ */
+function render(){
+  drawProg();
+  const st=STEPS[step], box=$('#step');
+  $('#skip').hidden=false; $('#next').textContent='Далее'; $('#next').disabled=false;
+
+  /* --- валюта --- */
+  if(st.id==='cur'){
+    const list=curSearch
+      ? ALL.filter(c=>c[0].toLowerCase().includes(curSearch.toLowerCase())||c[2].toLowerCase().includes(curSearch.toLowerCase()))
+      : POPULAR;
+    box.innerHTML=`<h1>${st.title}</h1><p>${st.sub}</p>
+      <div class="card">
+        <div class="chips" id="curChips">${list.map(c=>
+          `<button class="chip ${S.base&&S.base[0]===c[0]?'on':''}" data-c="${c[0]}">${c[1]} ${c[0]}<small>${c[2]}</small></button>`).join('')
+          || '<div class="none">Ничего не найдено</div>'}</div>
+        <input id="curS" placeholder="Другая валюта — начните вводить" value="${curSearch}" style="margin-top:12px">
+      </div>`;
+    $('#skip').hidden=true;
+    $('#next').disabled=!S.base;
+    $('#curS').oninput=e=>{curSearch=e.target.value;render();$('#curS').focus()};
+    document.querySelectorAll('#curChips .chip').forEach(b=>{
+      b.onclick=()=>{S.base=ALL.find(c=>c[0]===b.dataset.c);render()};
+    });
+    return;
+  }
+
+  /* --- финал --- */
+  if(st.id==='done'){ renderDone(); return; }
+
+  /* --- кредитки: своя форма из двух полей --- */
+  if(st.id==='cards'){
+    box.innerHTML=`<h1>${st.title}</h1><p>${st.sub}</p>
+      <div class="card"><span class="lbl">Ваши карты</span>
+        <div id="list">${itemsHTML(S.cards,c=>({
+          name:c.name, sub:`лимит ${fmt(c.limit)} ${sign()}`,
+          val:`${fmt(c.avail)} ${sign()}`}))}</div></div>
+      <div class="card">
+        <span class="lbl">Добавить карту</span>
+        <input id="f1" placeholder="Например, Альфа кредитная" style="margin-bottom:9px">
+        <div class="row">
+          <input id="f2" class="num" inputmode="decimal" placeholder="лимит">
+          <input id="f3" class="num" inputmode="decimal" placeholder="доступно">
+        </div>
+        <div class="hint">Слева — лимит по карте, справа — сколько на ней сейчас свободно.</div>
+        <button class="add" id="addBtn">Добавить карту</button>
+      </div>`;
+    bindRemove(S.cards);
+    $('#addBtn').onclick=()=>{
+      const n=$('#f1').value.trim(), l=parse($('#f2').value), a=parse($('#f3').value);
+      if(!n||!l)return toast('Нужны название и лимит');
+      if(a>l)return toast('Доступно не может быть больше лимита');
+      S.cards.push({name:n,limit:l,avail:a}); render();
+    };
+    return;
+  }
+
+  /* --- остальные шаги: название + сумма --- */
+  const arr=S[st.key];
+  box.innerHTML=`<h1>${st.title}</h1><p>${st.sub}</p>
+    <div class="card"><span class="lbl">Добавлено</span>
+      <div id="list">${itemsHTML(arr,x=>({name:x.name,val:`${fmt(x.amount)} ${sign()}`}))}</div></div>
+    <div class="card">
+      <div class="row">
+        <input id="f1" placeholder="${st.ph[0]}">
+        <input id="f2" class="num" inputmode="decimal" placeholder="${st.ph[1]}">
+      </div>
+      ${st.hint?`<div class="hint">${st.hint}</div>`:''}
+      <button class="add" id="addBtn">Добавить</button>
+    </div>`;
+  bindRemove(arr);
+  $('#addBtn').onclick=()=>{
+    const n=$('#f1').value.trim(), a=parse($('#f2').value);
+    if(!n||!a)return toast('Заполните название и сумму');
+    arr.push({name:n,amount:a}); render();
+  };
+}
+
+/* ═══ подсчёт ═══ */
+function totals(){
+  const assets =
+      S.cash.reduce((s,x)=>s+x.amount,0)
+    + S.cards.reduce((s,x)=>s+x.avail,0)
+    + S.savings.reduce((s,x)=>s+x.amount,0)
+    + S.property.reduce((s,x)=>s+x.amount,0)
+    + S.debtors.reduce((s,x)=>s+x.amount,0);
+  const liab =
+      S.cards.reduce((s,x)=>s+x.limit,0)
+    + S.creditors.reduce((s,x)=>s+x.amount,0);
+  return {assets, liab, capital: assets-liab};
+}
+
+/* ═══ финальный экран ═══ */
+function renderDone(){
+  const t=totals(), c=sign();
+  const nothing = t.assets===0 && t.liab===0;
+  $('#step').innerHTML=`
+    <h1>${nothing?'Можно начинать':'Вот ваша отправная точка'}</h1>
+    <p>${nothing
+      ? 'Остатки можно внести позже — в любой момент, из настроек.'
+      : 'Дальше приложение считает всё само: каждая трата будет уменьшать эти цифры, каждый доход — увеличивать.'}</p>
+
+    ${nothing?'':`
+    <div class="capital">
+      <div class="k">Ваш собственный капитал</div>
+      <div class="v">${fmt(t.capital)} ${c}</div>
+      <div class="s">Это то, что останется, если раздать все долги.<br>
+        Приложение вычислило его само — вводить его не нужно.</div>
+    </div>
+
+    <div class="card">
+      <div class="sum-row"><span>Активы</span><span class="v">${fmt(t.assets)} ${c}</span></div>
+      ${row('Наличные и счета',S.cash.reduce((s,x)=>s+x.amount,0),c)}
+      ${row('Доступно на картах',S.cards.reduce((s,x)=>s+x.avail,0),c)}
+      ${row('Вклады и инвестиции',S.savings.reduce((s,x)=>s+x.amount,0),c)}
+      ${row('Имущество',S.property.reduce((s,x)=>s+x.amount,0),c)}
+      ${row('Вам должны',S.debtors.reduce((s,x)=>s+x.amount,0),c)}
+      <div class="sum-row" style="margin-top:10px"><span>Обязательства</span><span class="v">${fmt(t.liab)} ${c}</span></div>
+      ${row('Лимиты по картам',S.cards.reduce((s,x)=>s+x.limit,0),c)}
+      ${row('Кредиты и займы',S.creditors.reduce((s,x)=>s+x.amount,0),c)}
+      <div class="sum-row tot"><span>Капитал</span><span class="v">${fmt(t.capital)} ${c}</span></div>
+    </div>
+
+    <button class="led-head" id="ledToggle">▸ показать проводки (${entries().length})</button>
+    <div class="ledger" id="ledger" hidden></div>`}`;
+
+  $('#next').textContent='Начать вести учёт';
+  $('#skip').hidden=true;
+  const lt=$('#ledToggle');
+  if(lt) lt.onclick=()=>{
+    const l=$('#ledger'); l.hidden=!l.hidden;
+    lt.textContent=l.hidden?`▸ показать проводки (${entries().length})`:'▾ скрыть проводки';
+    if(!l.hidden)drawLedger();
+  };
+}
+const row=(name,val,c)=> val? `<div class="sum-row" style="color:var(--soft);font-size:13px;padding:3px 0">
+    <span>&nbsp;&nbsp;${name}</span><span class="v">${fmt(val)} ${c}</span></div>`:'';
+
+/* ═══ проводки вступительных остатков ═══ */
+function entries(){
+  const E=[], CAP='Капитал · внесённый';
+  const asset=(acc,name,amt)=>E.push({t:name,lines:[
+    {s:'Д',a:`${acc} · ${name}`,m:amt},{s:'К',a:CAP,m:amt}]});
+  S.cash.forEach(x=>asset('Деньги',x.name,x.amount));
+  S.savings.forEach(x=>asset('Инвестиции',x.name,x.amount));
+  S.property.forEach(x=>asset('Имущество',x.name,x.amount));
+  S.debtors.forEach(x=>asset('Дебитор',x.name,x.amount));
+  S.cards.forEach(x=>{
+    asset('Кредитные средства',x.name,x.avail);
+    E.push({t:`${x.name} · долг по лимиту`,lines:[
+      {s:'Д',a:CAP,m:x.limit},{s:'К',a:`Кредитор · ${x.name}`,m:x.limit}]});
+  });
+  S.creditors.forEach(x=>E.push({t:x.name,lines:[
+    {s:'Д',a:CAP,m:x.amount},{s:'К',a:`Кредитор · ${x.name}`,m:x.amount}]}));
+  return E;
+}
+function drawLedger(){
+  const E=entries(), c=S.base[0];
+  let d=0,k=0;
+  const html=E.map(e=>{
+    e.lines.forEach(l=>{ l.s==='Д'?d+=l.m:k+=l.m; });
+    return `<table>${e.lines.map(l=>
+      `<tr><td class="${l.s==='Д'?'d':'c'}">${l.s}</td><td>&nbsp;${l.a}</td>
+       <td class="n">${fmt(l.m)} ${c}</td></tr>`).join('')}</table>`;
+  }).join('<hr>');
+  $('#ledger').innerHTML=
+    `<div class="k">${E.length} операций · kind=opening · дата начала учёта · контур ${c}</div><hr>`
+    + html + `<hr><div class="inv"><span>Σ base(Д) = Σ base(К)</span>
+      <span>${fmt(d)} = ${fmt(k)} ${Math.abs(d-k)<0.005?'✓':'✗'}</span></div>`;
+}
+
+/* ═══ навигация ═══ */
+$('#next').onclick=()=>{
+  if(STEPS[step].id==='done'){ toast('Здесь открылся бы главный экран'); return; }
+  step=Math.min(step+1,STEPS.length-1); window.scrollTo(0,0); render();
+};
+$('#skip').onclick=()=>{
+  step=Math.min(step+1,STEPS.length-1); window.scrollTo(0,0); render();
+};
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Гроссбух — первый запуск</title>
+<style>
+:root{
+  --paper:#E9EDF1; --card:#FFFFFF; --ink:#0F1A21; --soft:#5C6C78;
+  --line:#D8E0E7; --accent:#0E6E62; --accent-bg:#E0EFEC;
+  --clay:#A9501F; --clay-bg:#F6E9E1; --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--paper)}
+body{color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:430px;margin:0 auto;padding:0 14px 150px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+
+.prog{display:flex;gap:5px;padding:20px 2px 0}
+.prog i{flex:1;height:3px;background:var(--line);border-radius:2px;transition:.25s}
+.prog i.on{background:var(--accent)}
+.prog i.done{background:var(--accent);opacity:.4}
+
+.step{padding:26px 2px 0}
+.step h1{font-size:23px;font-weight:650;letter-spacing:-.02em;margin:0 0 8px;line-height:1.25}
+.step p{color:var(--soft);font-size:14px;margin:0 0 20px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.lbl{display:block;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--soft);margin-bottom:9px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:10px 13px;
+      font-size:14px;cursor:pointer;color:var(--ink);transition:.12s}
+.chip:active{transform:scale(.97)}
+.chip.on{border-color:var(--accent);background:var(--accent-bg);font-weight:600}
+.chip small{color:var(--soft);font-size:11px;margin-left:5px}
+.chip.on small{color:var(--accent)}
+
+input,select{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px 12px;
+             font:15px system-ui,sans-serif;outline:none;background:var(--card);color:var(--ink)}
+input:focus,select:focus{border-color:var(--accent)}
+input.num{font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums;text-align:right}
+.row{display:flex;gap:8px;margin-bottom:9px}
+.row .num{flex:1}
+.row select{width:96px;flex:none;padding:11px 6px;text-align:center}
+.hint{font-size:12px;color:var(--soft);margin:-2px 0 12px;line-height:1.4}
+.note{background:var(--accent-bg);color:var(--accent);border-radius:9px;padding:10px 12px;
+      font-size:12.5px;line-height:1.4;margin-bottom:12px}
+
+.add{width:100%;border:1px dashed var(--line);background:none;color:var(--soft);
+     border-radius:10px;padding:12px;font-size:14px;cursor:pointer}
+.add:active{border-color:var(--accent);color:var(--accent)}
+.add.edit{border-style:solid;border-color:var(--accent);color:var(--accent)}
+.btn2{display:flex;gap:8px}
+.btn2 .add{flex:1}
+.btn2 .cancel{flex:none;width:104px;border:1px solid var(--line);color:var(--soft)}
+.rate{display:flex;align-items:center;gap:8px;background:var(--clay-bg);border-radius:9px;
+      padding:9px 11px;margin-bottom:10px;font-size:12.5px;color:var(--clay)}
+.rate input{width:104px;flex:none;padding:7px 9px;font-size:14px;text-align:right;
+            font-family:ui-monospace,monospace}
+.rate span{flex:1;line-height:1.35}
+.fxline{font-size:12px;color:var(--soft);margin:-2px 0 12px}
+
+.item{display:flex;align-items:center;gap:8px;padding:11px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:none}
+.item .n{flex:1;min-width:0;font-size:14px}
+.item .n small{display:block;color:var(--soft);font-size:11px;margin-top:2px}
+.item .v{font-size:14px;font-weight:600;white-space:nowrap;text-align:right}
+.item .v small{display:block;font-weight:400;color:var(--soft);font-size:11px;margin-top:2px}
+.item button{border:none;background:none;color:var(--soft);cursor:pointer;padding:0 3px;line-height:1}
+.item .pen{font-size:15px}
+.item .x{font-size:19px}
+.item.sel{background:var(--accent-bg);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:8px}
+.none{color:var(--soft);font-size:13px;padding:2px}
+
+.sum-row{display:flex;justify-content:space-between;padding:9px 0;font-size:14px}
+.sum-row.tot{border-top:1px solid var(--line);margin-top:6px;padding-top:12px;font-weight:650;font-size:16px}
+.sum-row .v{font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.capital{background:var(--ink);color:#fff;border-radius:var(--r);padding:18px;margin-bottom:12px}
+.capital .k{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:#8FA5B0}
+.capital .v{font-size:30px;font-weight:600;margin-top:6px;font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.capital .s{font-size:12px;color:#8FA5B0;margin-top:7px;line-height:1.4}
+
+.led-head{width:100%;background:none;border:none;color:var(--soft);font-size:13px;padding:13px 2px;cursor:pointer}
+.ledger{background:#0F1A21;color:#C8D6DE;border-radius:var(--r);padding:14px;margin-bottom:12px;
+        font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;overflow-x:auto}
+.ledger .k{color:#5C7A88}
+.ledger .d{color:#7FD1C1}
+.ledger .c{color:#E8B08A}
+.ledger table{border-collapse:collapse;width:100%}
+.ledger td{padding:1px 0}
+.ledger td.n{text-align:right;padding-left:12px;white-space:nowrap}
+.ledger hr{border:none;border-top:1px solid #24333D;margin:8px 0}
+.inv{display:flex;justify-content:space-between;color:#7FD1C1}
+
+.bar{position:fixed;left:0;right:0;bottom:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+     background:linear-gradient(to top,var(--paper) 62%,transparent);z-index:5}
+.bar .in{max-width:430px;margin:0 auto}
+.big{width:100%;border:none;border-radius:12px;padding:16px;background:var(--accent);
+     color:#fff;font-size:16px;font-weight:600;cursor:pointer}
+.big:disabled{background:#B8C4CC}
+.big:active:not(:disabled){opacity:.88}
+.subrow{display:flex;justify-content:space-between;margin-top:6px}
+.subrow button{border:none;background:none;color:var(--soft);font-size:14px;padding:8px 4px;cursor:pointer}
+.subrow button:active{color:var(--accent)}
+.subrow button[hidden]{visibility:hidden;display:block}
+#toast{position:fixed;left:50%;bottom:132px;transform:translate(-50%,60px);background:var(--ink);color:#fff;
+       padding:12px 18px;border-radius:11px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:99}
+#toast.show{transform:translate(-50%,0);opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="prog" id="prog"></div>
+  <div class="step" id="step"></div>
+</div>
+<div class="bar"><div class="in">
+  <button class="big" id="next">Далее</button>
+  <div class="subrow">
+    <button id="back">← Назад</button>
+  </div>
+</div></div>
+<div id="toast"></div>
+
+<script>
+/* ═══ валюты и демо-курсы (к рублю) ═══ */
+const CUR=[
+ ['RUB','₽','Рубль',1],        ['EUR','€','Евро',92.40],
+ ['USD','$','Доллар США',79.50],['GBP','£','Фунт',107.20],
+ ['CNY','¥','Юань',11.00],     ['KZT','₸','Тенге',0.17],
+ ['CHF','Fr','Франк',98.00],   ['TRY','₺','Лира',2.30],
+ ['AED','د.إ','Дирхам',21.60], ['RSD','дин','Сербский динар',0.79],
+ ['GEL','₾','Лари',29.50],     ['AMD','֏','Драм',0.20],
+ ['MNT','₮','Тугрик',null],     ['LAK','₭','Кип',null],
+ ['NPR','₨','Непальская рупия',0.59],['INR','₹','Индийская рупия',0.93],
+ ['THB','฿','Бат',2.40],       ['IDR','Rp','Индонезийская рупия',0.0049]
+];
+const POP=CUR.slice(0,6);
+const C=c=>CUR.find(x=>x[0]===c);
+
+/* ═══ состояние ═══ */
+const S={base:null, cash:[], cards:[], savings:[], property:[], debtors:[], creditors:[]};
+let step=0, curSearch='', editIdx=null;
+
+const $=s=>document.querySelector(s);
+const fmt=n=>(n||0).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
+const parse=s=>{const v=parseFloat(String(s).replace(/\s/g,'').replace(',','.'));return isNaN(v)?0:v};
+const bcode=()=>S.base?S.base[0]:'RUB';
+const bsign=()=>S.base?S.base[1]:'';
+const sgn=c=>C(c)?C(c)[1]:c;
+const MANUAL={};                                // курсы, введённые вручную
+function cross(c){                              // курс к базовой валюте
+  if(c===bcode())return 1;
+  const a=C(c)[3], b=C(bcode())[3];
+  if(a!=null&&b!=null)return a/b;
+  return MANUAL[c]!=null?MANUAL[c]:null;        // null → нужен ручной ввод
+}
+// курс из справочника — только для чтения; введённый вручную — всегда редактируемый
+const fromTable=c=>c===bcode()||(C(c)[3]!=null&&C(bcode())[3]!=null);
+const inBase=it=>{const r=cross(it.cur);return r===null?0:it.amount*r};
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+
+/* ═══ шаги ═══ */
+const STEPS=[
+ {id:'cur',  title:'В какой валюте вести учёт?',
+  sub:'Это основная валюта отчётов. Позже её не поменять, но вести операции в других валютах можно.'},
+ {id:'cash', key:'cash', title:'Сколько у вас денег?',
+  sub:'Наличные и счета в банках. Откройте банковское приложение и перепишите остатки.',
+  ph:['Например, Сбербанк','0,00'],
+  note:'Вклады и депозиты здесь вносить не нужно — для них будет отдельный шаг.',
+  hint:'Названия любые — так, как вам удобно их узнавать.'},
+ {id:'cards',key:'cards',title:'Есть кредитные карты?',
+  sub:'Нужны две цифры: лимит по карте и сколько на ней сейчас доступно.'},
+ {id:'save', key:'savings',title:'Есть вклады или инвестиции?',
+  sub:'Вклады, брокерский счёт, акции. Достаточно текущей суммы — вспоминать, за сколько покупали, не нужно.',
+  ph:['Например, Вклад в Тинькофф','0,00'],
+  hint:'Вклады и инвестиции можно вести в одном разделе, а потом разложить по своим папкам.'},
+ {id:'prop', key:'property',title:'Какое у вас имущество?',
+  sub:'Квартира, машина, техника — то, что вы считаете своим капиталом. Оценка ваша, точность не важна.',
+  ph:['Например, Квартира','0,00'],
+  hint:'Повседневные вещи вносить не нужно — только то, что заметно влияет на ваше состояние.'},
+ {id:'debt', key:'debtors',title:'Вам кто-нибудь должен?',
+  sub:'Деньги, которые вы дали в долг и ждёте обратно.', ph:['Имя','0,00']},
+ {id:'cred', key:'creditors',title:'А вы кому-нибудь должны?',
+  sub:'Кредиты, ипотека, долги друзьям. Нужен остаток долга на сегодня.',
+  ph:['Например, Ипотека','0,00']},
+ {id:'done', title:'Готово', sub:''}
+];
+
+const drawProg=()=>$('#prog').innerHTML=STEPS.map((s,i)=>
+  `<i class="${i===step?'on':(i<step?'done':'')}"></i>`).join('');
+
+/* ═══ выбор валюты в форме ═══ */
+function curOptions(sel){
+  const used=[...new Set([bcode(),...S.cash.map(x=>x.cur),...S.savings.map(x=>x.cur)])];
+  const list=[...used, ...CUR.map(c=>c[0]).filter(c=>!used.includes(c))];
+  return list.map(c=>`<option value="${c}" ${c===sel?'selected':''}>${sgn(c)} ${c}</option>`).join('');
+}
+
+/* ═══ блок курса под селектором валюты ═══ */
+function rateBlock(cur){
+  if(cur===bcode())return '';
+  if(fromTable(cur))
+    return `<div class="fxline">Курс на дату начала учёта: 1 ${cur} = ${fmt(cross(cur))} ${bsign()}
+            <span style="opacity:.7">· из справочника</span></div>`;
+  const has=MANUAL[cur]!=null;
+  return `<div class="rate">
+      <span>${has?`Курс ${cur} указан вами — можно изменить`
+                 :`Курс ${cur} к ${bcode()} не найден в справочнике — укажите его`}<br>
+        <span style="opacity:.75">1 ${cur} = ? ${bsign()} · применяется ко всем записям в этой валюте</span></span>
+      <input id="fr" class="num" inputmode="decimal" placeholder="0,00"
+             value="${has?String(MANUAL[cur]).replace('.',','):''}"></div>`;
+}
+function readRate(cur){                     // true, если курс известен или введён
+  if(fromTable(cur))return true;
+  const el=$('#fr'); const v=el?parse(el.value):0;
+  if(!v){toast('Укажите курс '+cur);return false}
+  MANUAL[cur]=v; return true;
+}
+
+/* ═══ список добавленного ═══ */
+function itemsHTML(arr,f){
+  if(!arr.length)return '<div class="none">Пока ничего не добавлено</div>';
+  return arr.map((it,i)=>{
+    const d=f(it);
+    return `<div class="item ${editIdx===i?'sel':''}">
+      <div class="n">${d.name}${d.sub?`<small>${d.sub}</small>`:''}</div>
+      <div class="v">${d.val}${d.base?`<small>${d.base}</small>`:''}</div>
+      <button class="pen" data-e="${i}">✎</button>
+      <button class="x" data-d="${i}">×</button></div>`;
+  }).join('');
+}
+function bindItems(arr,onEdit){
+  document.querySelectorAll('.item [data-d]').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.d;
+    arr.splice(i,1);
+    if(editIdx===i)editIdx=null; else if(editIdx>i)editIdx--;
+    render();
+  });
+  document.querySelectorAll('.item [data-e]').forEach(b=>b.onclick=()=>{
+    editIdx=+b.dataset.e; render();
+    const f=$('#f1'); if(f){f.focus();f.setSelectionRange(f.value.length,f.value.length)}
+  });
+}
+
+/* ═══ рендер ═══ */
+function render(){
+  drawProg();
+  const st=STEPS[step], box=$('#step');
+  $('#next').disabled=false; $('#back').hidden=(step===0);
+  // одна кнопка вместо пары «Далее / Пропустить»: подпись зависит от того, есть ли записи
+  const filled = st.key ? S[st.key].length>0 : true;
+  $('#next').textContent = (st.id==='cur'||st.id==='done') ? 'Далее' : (filled?'Далее':'Пропустить');
+
+  /* — валюта — */
+  if(st.id==='cur'){
+    const q=curSearch.trim().toLowerCase();
+    const list=q?CUR.filter(c=>c[0].toLowerCase().includes(q)||c[2].toLowerCase().includes(q)):POP;
+    box.innerHTML=`<h1>${st.title}</h1><p>${st.sub}</p>
+      <div class="card">
+        <div class="chips" id="curChips">${
+          list.map(c=>`<button class="chip ${S.base&&S.base[0]===c[0]?'on':''}" data-c="${c[0]}">${c[1]} ${c[0]}<small>${c[2]}</small></button>`).join('')
+          || '<div class="none">Ничего не найдено</div>'}</div>
+        <input id="curS" placeholder="Другая валюта — начните вводить" style="margin-top:12px">
+      </div>`;
+    $('#next').disabled=!S.base;
+    const inp=$('#curS'); inp.value=curSearch;
+    inp.oninput=e=>{ curSearch=e.target.value; redrawCurChips(); };   // поле не пересоздаём
+    bindCurChips();
+    return;
+  }
+
+  if(st.id==='done'){ renderDone(); return; }
+
+  /* — кредитки — */
+  if(st.id==='cards'){
+    const e=editIdx!==null?S.cards[editIdx]:null;
+    box.innerHTML=`<h1>${st.title}</h1><p>${st.sub}</p>
+      <div class="card"><span class="lbl">Ваши карты</span>
+        <div id="list">${itemsHTML(S.cards,c=>({
+          name:c.name, sub:`лимит ${fmt(c.limit)} ${sgn(c.cur)}`,
+          val:`${fmt(c.avail)} ${sgn(c.cur)}`,
+          base:c.cur===bcode()?'':(cross(c.cur)===null
+                ?`<span style="color:var(--clay)">курс не указан</span>`
+                :`≈ ${fmt(c.avail*cross(c.cur))} ${bsign()}`)}))}</div></div>
+      <div class="card">
+        <span class="lbl">${e?'Изменить карту':'Добавить карту'}</span>
+        <input id="f1" placeholder="Например, Альфа кредитная" value="${e?e.name:''}" style="margin-bottom:9px">
+        <div class="row">
+          <input id="f2" class="num" inputmode="decimal" placeholder="лимит" value="${e?fmt(e.limit):''}">
+          <input id="f3" class="num" inputmode="decimal" placeholder="доступно" value="${e?fmt(e.avail):''}">
+          <select id="f4">${curOptions(e?e.cur:bcode())}</select>
+        </div>
+        ${rateBlock(e?e.cur:bcode())}
+        <div class="hint">Слева — лимит по карте, справа — сколько на ней сейчас свободно.</div>
+        ${e?`<div class="btn2">
+               <button class="add edit" id="addBtn">Сохранить</button>
+               <button class="add cancel" id="cancelBtn">Отмена</button></div>`
+           :`<button class="add" id="addBtn">Добавить карту</button>`}
+      </div>`;
+    bindItems(S.cards);
+    $('#f4').onchange=()=>{ const el=$('#f4'); const v=el.value;
+      const box=el.closest('.card'); const old=box.querySelector('.rate,.fxline');
+      if(old)old.outerHTML=rateBlock(v); else el.closest('.row').insertAdjacentHTML('afterend',rateBlock(v)); };
+    if($('#cancelBtn'))$('#cancelBtn').onclick=()=>{editIdx=null;render()};
+    $('#addBtn').onclick=()=>{
+      const n=$('#f1').value.trim(), l=parse($('#f2').value), a=parse($('#f3').value), c=$('#f4').value;
+      if(!n||!l)return toast('Нужны название и лимит');
+      if(a>l)return toast('Доступно не может быть больше лимита');
+      if(!readRate(c))return;
+      const rec={name:n,limit:l,avail:a,cur:c};
+      if(editIdx!==null){S.cards[editIdx]=rec;editIdx=null;toast('Изменено')} else S.cards.push(rec);
+      render();
+    };
+    return;
+  }
+
+  /* — обычные шаги — */
+  const arr=S[st.key], e=editIdx!==null?arr[editIdx]:null;
+  box.innerHTML=`<h1>${st.title}</h1><p>${st.sub}</p>
+    ${st.note?`<div class="note">${st.note}</div>`:''}
+    <div class="card"><span class="lbl">Добавлено</span>
+      <div id="list">${itemsHTML(arr,x=>({
+        name:x.name, val:`${fmt(x.amount)} ${sgn(x.cur)}`,
+        base:x.cur===bcode()?'':(cross(x.cur)===null
+              ?`<span style="color:var(--clay)">курс не указан</span>`
+              :`≈ ${fmt(inBase(x))} ${bsign()}`)}))}</div></div>
+    <div class="card">
+      ${e?'<span class="lbl">Изменить запись</span>':''}
+      <input id="f1" placeholder="${st.ph[0]}" value="${e?e.name:''}" style="margin-bottom:9px">
+      <div class="row">
+        <input id="f2" class="num" inputmode="decimal" placeholder="${st.ph[1]}" value="${e?fmt(e.amount):''}">
+        <select id="f3">${curOptions(e?e.cur:bcode())}</select>
+      </div>
+      ${rateBlock(e?e.cur:bcode())}
+      ${st.hint?`<div class="hint">${st.hint}</div>`:''}
+      ${e?`<div class="btn2">
+             <button class="add edit" id="addBtn">Сохранить</button>
+             <button class="add cancel" id="cancelBtn">Отмена</button></div>`
+         :`<button class="add" id="addBtn">Добавить</button>`}
+    </div>`;
+  bindItems(arr);
+  $('#f3').onchange=()=>{ const el=$('#f3'); const v=el.value;
+    const box=el.closest('.card'); const old=box.querySelector('.rate,.fxline');
+    if(old)old.outerHTML=rateBlock(v); else el.closest('.row').insertAdjacentHTML('afterend',rateBlock(v)); };
+  if($('#cancelBtn'))$('#cancelBtn').onclick=()=>{editIdx=null;render()};
+  $('#addBtn').onclick=()=>{
+    const n=$('#f1').value.trim(), a=parse($('#f2').value), c=$('#f3').value;
+    if(!n||!a)return toast('Заполните название и сумму');
+    if(!readRate(c))return;
+    const rec={name:n,amount:a,cur:c};
+    if(editIdx!==null){arr[editIdx]=rec;editIdx=null;toast('Изменено')} else arr.push(rec);
+    render();
+  };
+}
+
+/* — перерисовка только чипов валют, поле ввода не трогаем — */
+function redrawCurChips(){
+  const q=curSearch.trim().toLowerCase();
+  const list=q?CUR.filter(c=>c[0].toLowerCase().includes(q)||c[2].toLowerCase().includes(q)):POP;
+  $('#curChips').innerHTML=list.map(c=>
+    `<button class="chip ${S.base&&S.base[0]===c[0]?'on':''}" data-c="${c[0]}">${c[1]} ${c[0]}<small>${c[2]}</small></button>`
+  ).join('')||'<div class="none">Ничего не найдено</div>';
+  bindCurChips();
+}
+function bindCurChips(){
+  document.querySelectorAll('#curChips .chip').forEach(b=>b.onclick=()=>{
+    const had=Object.keys(MANUAL);
+    S.base=C(b.dataset.c);
+    // ручные курсы задавались «к прежней базовой» — после смены они бессмысленны
+    if(had.length){ had.forEach(k=>delete MANUAL[k]);
+      toast('Курсы '+had.join(', ')+' нужно указать заново'); }
+    redrawCurChips(); $('#next').disabled=false;
+  });
+}
+
+/* ═══ итоги ═══ */
+const sum=(arr,f)=>arr.reduce((s,x)=>s+f(x),0);
+function totals(){
+  const cv=(a,c)=>{const r=cross(c);return r===null?0:a*r};
+  const assets = sum(S.cash,inBase)+sum(S.savings,inBase)+sum(S.property,inBase)
+               + sum(S.debtors,inBase)+sum(S.cards,c=>cv(c.avail,c.cur));
+  const liab   = sum(S.cards,c=>cv(c.limit,c.cur))+sum(S.creditors,inBase);
+  return {assets,liab,capital:assets-liab};
+}
+const row=(n,v)=> v?`<div class="sum-row" style="color:var(--soft);font-size:13px;padding:3px 0">
+   <span>&nbsp;&nbsp;${n}</span><span class="v">${fmt(v)} ${bsign()}</span></div>`:'';
+
+function missingRates(){
+  const all=[...S.cash,...S.savings,...S.property,...S.debtors,...S.creditors,...S.cards];
+  return [...new Set(all.map(x=>x.cur).filter(c=>cross(c)===null))];
+}
+function renderDone(){
+  const t=totals(), empty=t.assets===0&&t.liab===0, miss=missingRates();
+  $('#step').innerHTML=`
+    <h1>${empty?'Можно начинать':'Вот ваша отправная точка'}</h1>
+    <p>${empty?'Остатки можно внести позже — в любой момент, из настроек.'
+              :'Дальше приложение считает всё само: каждая трата будет уменьшать эти цифры, каждый доход — увеличивать.'}</p>
+    ${miss.length?`<div class="rate" style="margin-bottom:12px">
+      <span>Не указан курс: <b>${miss.join(', ')}</b>. Эти суммы пока не вошли в итог —
+      вернитесь и укажите курс через карандаш.</span></div>`:''}
+    ${empty?'':`
+    <div class="capital">
+      <div class="k">Ваш собственный капитал</div>
+      <div class="v">${fmt(t.capital)} ${bsign()}</div>
+      <div class="s">Это то, что останется, если раздать все долги.<br>
+        Приложение вычислило его само — вводить его не нужно.</div>
+    </div>
+    <div class="card">
+      <div class="sum-row"><span>Активы</span><span class="v">${fmt(t.assets)} ${bsign()}</span></div>
+      ${row('Наличные и счета',sum(S.cash,inBase))}
+      ${row('Доступно на картах',sum(S.cards,c=>{const r=cross(c.cur);return r===null?0:c.avail*r}))}
+      ${row('Вклады и инвестиции',sum(S.savings,inBase))}
+      ${row('Имущество',sum(S.property,inBase))}
+      ${row('Вам должны',sum(S.debtors,inBase))}
+      <div class="sum-row" style="margin-top:10px"><span>Обязательства</span><span class="v">${fmt(t.liab)} ${bsign()}</span></div>
+      ${row('Лимиты по картам',sum(S.cards,c=>{const r=cross(c.cur);return r===null?0:c.limit*r}))}
+      ${row('Кредиты и займы',sum(S.creditors,inBase))}
+      <div class="sum-row tot"><span>Капитал</span><span class="v">${fmt(t.capital)} ${bsign()}</span></div>
+    </div>
+    <button class="led-head" id="ledToggle">▸ показать проводки (${entries().length})</button>
+    <div class="ledger" id="ledger" hidden></div>`}`;
+  $('#next').textContent='Начать вести учёт';
+  const lt=$('#ledToggle');
+  if(lt)lt.onclick=()=>{
+    const l=$('#ledger'); l.hidden=!l.hidden;
+    lt.textContent=l.hidden?`▸ показать проводки (${entries().length})`:'▾ скрыть проводки';
+    if(!l.hidden)drawLedger();
+  };
+}
+
+/* ═══ проводки ═══ */
+function entries(){
+  const E=[], CAP='Капитал · внесённый';
+  const A=(type,x)=>E.push({lines:[
+    {s:'Д',a:`${type} · ${x.name}`,m:x.amount,c:x.cur},
+    {s:'К',a:CAP,m:inBase(x),c:bcode()}]});
+  S.cash.forEach(x=>A('Деньги',x));
+  S.savings.forEach(x=>A('Вложения',x));
+  S.property.forEach(x=>A('Имущество',x));
+  S.debtors.forEach(x=>A('Дебитор',x));
+  S.cards.forEach(x=>{
+    E.push({lines:[
+      {s:'Д',a:`Кредитные средства · ${x.name}`,m:x.avail,c:x.cur},
+      {s:'К',a:CAP,m:x.avail*cross(x.cur),c:bcode()}]});
+    E.push({lines:[
+      {s:'Д',a:CAP,m:x.limit*cross(x.cur),c:bcode()},
+      {s:'К',a:`Кредитор · ${x.name}`,m:x.limit,c:x.cur}]});
+  });
+  S.creditors.forEach(x=>E.push({lines:[
+    {s:'Д',a:CAP,m:inBase(x),c:bcode()},
+    {s:'К',a:`Кредитор · ${x.name}`,m:x.amount,c:x.cur}]}));
+  return E;
+}
+function drawLedger(){
+  const E=entries(); let d=0,k=0;
+  const html=E.map(e=>{
+    e.lines.forEach(l=>{ const b=l.m*cross(l.c); l.s==='Д'?d+=b:k+=b; });
+    return `<table>${e.lines.map(l=>{
+      const fx=l.c!==bcode()?` <span class="k">×${fmt(cross(l.c))}</span>`:'';
+      return `<tr><td class="${l.s==='Д'?'d':'c'}">${l.s}</td><td>&nbsp;${l.a}</td>
+        <td class="n">${fmt(l.m)} ${l.c}${fx}</td></tr>`;}).join('')}</table>`;
+  }).join('<hr>');
+  $('#ledger').innerHTML=
+    `<div class="k">${E.length} операций · kind=opening · дата начала учёта · контур ${bcode()}</div><hr>`
+    +html+`<hr><div class="inv"><span>Σ base(Д) = Σ base(К)</span>
+     <span>${fmt(d)} = ${fmt(k)} ${Math.abs(d-k)<0.5?'✓':'✗'}</span></div>`;
+}
+
+/* ═══ навигация ═══ */
+const go=n=>{ editIdx=null; step=Math.max(0,Math.min(n,STEPS.length-1)); window.scrollTo(0,0); render(); };
+$('#next').onclick=()=>{ if(STEPS[step].id==='done')return toast('Здесь открылся бы главный экран'); go(step+1) };
+$('#back').onclick=()=>go(step-1);
+render();
+</script>
+</body>
+</html>

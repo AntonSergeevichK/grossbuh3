@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Гроссбух — перевод и конвертация</title>
+<style>
+:root{
+  --paper:#E9EDF1; --card:#FFFFFF; --ink:#0F1A21; --soft:#5C6C78;
+  --line:#D8E0E7; --accent:#0E6E62; --accent-bg:#E0EFEC;
+  --clay:#A9501F; --clay-bg:#F6E9E1; --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--paper)}
+body{color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:430px;margin:0 auto;padding:0 14px 110px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+
+.head{display:flex;align-items:baseline;justify-content:space-between;padding:18px 2px 14px}
+.head h1{font-size:19px;font-weight:650;margin:0;letter-spacing:-.01em}
+.head span{font-size:12px;color:var(--soft)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.lbl{display:block;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--soft);margin-bottom:9px}
+h2.sec{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--soft);margin:20px 0 9px 2px}
+
+.acc-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.acc-row:last-child{border-bottom:none}
+.acc-row .n{font-size:14px}
+.acc-row .n small{display:block;color:var(--soft);font-size:11px;margin-top:1px}
+.acc-row .b{font-size:15px;font-weight:600}
+
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:9px 12px;
+      font-size:14px;cursor:pointer;color:var(--ink);display:flex;align-items:center;gap:7px;transition:.12s}
+.chip:active{transform:scale(.97)}
+.chip.on{border-color:var(--accent);background:var(--accent-bg);font-weight:600}
+.chip.off{opacity:.35;pointer-events:none}
+.chip .bal{font:11px/1 ui-monospace,monospace;color:var(--soft)}
+.chip.on .bal{color:var(--accent)}
+
+.amount-row{display:flex;align-items:baseline;justify-content:center;gap:6px}
+.amt{font:600 38px/1 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;
+     border:none;outline:none;text-align:right;width:100%;max-width:236px;color:var(--ink);background:transparent;padding:4px 0}
+.amt.small{font-size:30px}
+.amt::placeholder{color:#C3CDD5}
+.cur{font:500 21px/1 ui-monospace,monospace;color:var(--soft)}
+.after{text-align:center;font-size:12px;color:var(--soft);margin-top:9px}
+
+.arrow{text-align:center;color:var(--soft);font-size:19px;margin:2px 0 8px}
+.fxbox{background:var(--accent-bg);border-radius:10px;padding:11px 13px;margin-top:12px;font-size:13px;color:var(--accent)}
+.fxbox .r{font-weight:600;font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.fxbox small{display:block;margin-top:4px;opacity:.85;font-size:11.5px;line-height:1.4}
+.fxbox.warn{background:var(--clay-bg);color:var(--clay)}
+
+.more{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.more button{border:1px dashed var(--line);background:none;color:var(--soft);border-radius:9px;
+             padding:9px 12px;font-size:13px;cursor:pointer}
+.more button:active{border-color:var(--accent);color:var(--accent)}
+textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;
+         font:14px system-ui,sans-serif;outline:none;background:var(--card);color:var(--ink);resize:vertical;min-height:58px}
+.check{display:flex;align-items:flex-start;gap:10px;padding:13px 0 2px;cursor:pointer}
+.check input{width:19px;height:19px;flex:none;margin:1px 0 0;accent-color:var(--accent)}
+.check span{font-size:13.5px;line-height:1.4}
+.check small{display:block;color:var(--soft);font-size:12px;margin-top:2px}
+
+.op{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:7px}
+.op-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.op-t{font-size:14px;line-height:1.35}
+.op-s{font-size:12px;color:var(--soft);margin-top:3px}
+.op-a{font-size:14px;font-weight:600;white-space:nowrap;text-align:right}
+.op-a small{display:block;font-weight:400;color:var(--soft);font-size:11px;margin-top:2px}
+.op.pend{border-color:var(--clay);background:var(--clay-bg)}
+.op-act{display:flex;gap:7px;margin-top:11px}
+.op-act button{flex:1;border:1px solid var(--line);background:var(--card);border-radius:8px;
+               padding:9px;font-size:12.5px;color:var(--soft);cursor:pointer}
+.op-act button:active{border-color:var(--accent);color:var(--accent)}
+.op-act.icons{gap:6px}
+.op-act.icons button{flex:none;width:40px;height:36px;display:flex;align-items:center;justify-content:center;padding:0}
+.op-act.icons button.wide{flex:1;gap:7px;font-weight:600}
+.op-act.icons .rm:active{border-color:var(--clay);color:var(--clay)}
+.op-act .done{border-color:var(--accent);color:var(--accent);font-weight:600}
+.empty{color:var(--soft);font-size:13px;padding:2px}
+
+.dgrp{display:flex;justify-content:space-between;align-items:baseline;margin:14px 2px 8px;
+      padding-bottom:5px;border-bottom:1px solid var(--line)}
+.dgrp .d{font-size:12px;font-weight:600}
+
+.bar{position:fixed;left:0;right:0;bottom:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+     background:linear-gradient(to top,var(--paper) 74%,transparent);z-index:5}
+.bar .in{max-width:430px;margin:0 auto}
+.big{width:100%;border:none;border-radius:12px;padding:16px;background:var(--accent);
+     color:#fff;font-size:16px;font-weight:600;cursor:pointer}
+.big:disabled{background:#B8C4CC}
+.big:active:not(:disabled){opacity:.88}
+
+.screen{position:fixed;inset:0;background:var(--paper);overflow-y:auto;z-index:10}
+.screen[hidden]{display:none}
+.fhead{display:flex;align-items:center;justify-content:space-between;padding:16px 2px 12px;gap:10px}
+.fhead .x{border:none;background:none;font-size:24px;color:var(--soft);cursor:pointer;padding:0 4px;line-height:1}
+.fhead h1{font-size:17px;font-weight:650;margin:0;flex:1}
+.datechip{font-size:13px;color:var(--soft);background:var(--card);border:1px solid var(--line);
+          border-radius:20px;padding:7px 12px;cursor:pointer}
+.datechip input{border:none;background:none;font:inherit;color:inherit;width:100px;padding:0;outline:none}
+.taps{font:11px/1 ui-monospace,monospace;color:var(--soft);white-space:nowrap}
+.taps b{color:var(--accent);font-size:12px}
+
+.led-head{width:100%;background:none;border:none;color:var(--soft);font-size:13px;padding:13px 2px;cursor:pointer}
+.ledger{background:#0F1A21;color:#C8D6DE;border-radius:var(--r);padding:14px;margin-bottom:12px;
+        font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;overflow-x:auto}
+.ledger .k{color:#5C7A88}
+.ledger .d{color:#7FD1C1}
+.ledger .c{color:#E8B08A}
+.ledger table{border-collapse:collapse;width:100%}
+.ledger td{padding:2px 0}
+.ledger td.n{text-align:right;padding-left:12px;white-space:nowrap}
+.ledger hr{border:none;border-top:1px solid #24333D;margin:9px 0}
+.inv{display:flex;justify-content:space-between;color:#7FD1C1}
+
+#toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,60px);background:var(--ink);color:#fff;
+       padding:12px 18px;border-radius:11px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:99}
+#toast.show{transform:translate(-50%,0);opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="main">
+  <div class="head"><h1>Гроссбух</h1><span id="today"></span></div>
+
+  <div class="card">
+    <span class="lbl">Счета</span>
+    <div id="accList"></div>
+  </div>
+
+  <div id="pendBox"></div>
+
+  <h2 class="sec">Переводы и конвертации</h2>
+  <div id="hist"><div class="empty">Пока пусто</div></div>
+</div>
+
+<div class="bar"><div class="in"><button class="big" id="open">+ Перевод или конвертация</button></div></div>
+
+<div class="screen" id="form" hidden>
+ <div class="wrap">
+  <div class="fhead">
+    <button class="x" id="close">×</button>
+    <h1 id="fTitle">Перевод</h1>
+    <label class="datechip">📅<input type="date" id="date"></label>
+    <span class="taps">касаний <b id="tapN">0</b></span>
+  </div>
+
+  <div class="card">
+    <div class="amount-row">
+      <input class="amt" id="a1" inputmode="decimal" placeholder="0" autocomplete="off">
+      <span class="cur" id="c1">₽</span>
+    </div>
+    <div class="after" id="after1"></div>
+  </div>
+
+  <div class="card">
+    <span class="lbl">Откуда</span>
+    <div class="chips" id="from"></div>
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <div class="card">
+    <span class="lbl">Куда</span>
+    <div class="chips" id="to"></div>
+  </div>
+
+  <div class="card" id="conv" hidden>
+    <span class="lbl">Сколько зачислено</span>
+    <div class="amount-row">
+      <input class="amt small" id="a2" inputmode="decimal" placeholder="0" autocomplete="off">
+      <span class="cur" id="c2">€</span>
+    </div>
+    <div id="fx"></div>
+  </div>
+
+  <div class="more">
+    <button id="bDesc">+ описание</button>
+  </div>
+  <div class="card" id="descCard" hidden>
+    <span class="lbl">Описание</span>
+    <textarea id="desc" placeholder="Необязательно"></textarea>
+  </div>
+
+  <div class="card">
+    <label class="check">
+      <input type="checkbox" id="pend">
+      <span>Деньги ещё не дошли
+        <small>Отметьте, если перевод идёт дольше обычного. Средства встанут в «Переводы в пути»,
+        и вы завершите операцию, когда они появятся на счёте.</small></span>
+    </label>
+  </div>
+
+  <button class="led-head" id="ledToggle">▸ показать проводку</button>
+  <div class="ledger" id="ledger" hidden></div>
+ </div>
+ <div class="bar"><div class="in"><button class="big" id="save" disabled>Сохранить</button></div></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ═══ данные ═══ */
+const BASE='RUB';
+const RATE={RUB:1, EUR:92.40, USD:79.50};        // курс ЦБ на сегодня
+const ACC=[
+  {id:1,name:'Альфа-Банк',cur:'RUB',sign:'₽',bal:48250},
+  {id:2,name:'Наличные',  cur:'RUB',sign:'₽',bal:7300},
+  {id:3,name:'Кредитка',  cur:'RUB',sign:'₽',bal:67890,note:'кредитные средства'},
+  {id:4,name:'Кошелёк €', cur:'EUR',sign:'€',bal:420},
+  {id:5,name:'Счёт $',    cur:'USD',sign:'$',bal:1200},
+  {id:6,name:'Брокер ₽',  cur:'RUB',sign:'₽',bal:100,note:'свободные деньги у брокера'}
+];
+const TRANSIT={id:99,name:'Переводы в пути',cur:BASE,sign:'₽'};
+
+let from=null,to=null,taps=0,hist=[],seq=1,editId=null;
+const ICON={
+  copy:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
+  edit:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/>
+        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`,
+  del:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/>
+        <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+        <path d="M10 11v6M14 11v6"/></svg>`,
+  ok:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+      stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`
+};
+const $=s=>document.querySelector(s);
+const fmt=n=>(n||0).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=n=>(n||0).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:n<10?4:2});
+const parse=s=>{const v=parseFloat(String(s).replace(/\s/g,'').replace(',','.'));return isNaN(v)?0:v};
+const A1=()=>parse($('#a1').value), A2=()=>parse($('#a2').value);
+const isConv=()=>from&&to&&from.cur!==to.cur;
+const acc=id=>ACC.find(a=>a.id===id);
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400)}
+document.addEventListener('pointerdown',e=>{
+  if(!$('#form').hidden&&e.target.closest('button,.chip,input,textarea,label')){taps++;$('#tapN').textContent=taps}
+});
+
+/* ═══ главный экран ═══ */
+function drawMain(){
+  $('#today').textContent=new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
+  $('#accList').innerHTML=ACC.map(a=>
+    `<div class="acc-row"><div class="n">${a.name}${a.note?`<small>${a.note}</small>`:''}</div>
+     <div class="b mono">${fmt(a.bal)} ${a.sign}</div></div>`).join('');
+
+  const pend=hist.filter(h=>h.pending);
+  $('#pendBox').innerHTML = pend.length ? `<h2 class="sec">Деньги в пути</h2>`+pend.map(h=>`
+      <div class="op pend">
+        <div class="op-top">
+          <div><div class="op-t">${h.fromName} → ${h.toName}</div>
+               <div class="op-s">отправлено ${h.date}${h.desc?' · '+h.desc:''}</div></div>
+          <div class="op-a mono">${fmt(h.amt1)} ${h.sign1}</div>
+        </div>
+        <div class="op-act icons">
+          <button class="wide done" data-done="${h.id}">${ICON.ok} Деньги дошли</button>
+          <button data-edit="${h.id}" title="Изменить">${ICON.edit}</button>
+          <button class="rm" data-del="${h.id}" title="Удалить">${ICON.del}</button>
+        </div></div>`).join('') : '';
+
+  const done=hist.filter(h=>!h.pending);
+  const box=$('#hist');
+  if(!done.length){box.innerHTML='<div class="empty">Пока пусто</div>'}
+  else{
+    const sorted=[...done].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+    let cur=null; box.innerHTML='';
+    sorted.forEach(h=>{
+      if(h.date!==cur){cur=h.date;
+        const g=document.createElement('div');g.className='dgrp';
+        g.innerHTML=`<span class="d">${human(cur)}</span>`;box.appendChild(g)}
+      const el=document.createElement('div');el.className='op';
+      const conv=h.cur1!==h.cur2;
+      // при развороте меняются и число, и обе подписи — иначе смысл переворачивается
+      const r=h.amt1/h.amt2;
+      const shown = r>=1 ? `${num(r)} ${h.cur1} за 1 ${h.cur2}`
+                         : `${num(1/r)} ${h.cur2} за 1 ${h.cur1}`;
+      el.innerHTML=`<div class="op-top">
+          <div><div class="op-t">${h.fromName} → ${h.toName}</div>
+               <div class="op-s">${conv?'конвертация':'перевод'}${h.desc?' · '+h.desc:''}${h.wasPending?' · был в пути':''}</div></div>
+          <div class="op-a mono">${fmt(h.amt1)} ${h.sign1}
+            ${conv?`<small>→ ${fmt(h.amt2)} ${h.sign2}</small>`:''}</div>
+        </div>
+        ${conv?`<div class="op-s" style="margin-top:6px">курс ${shown}</div>`:''}
+        <div class="op-act icons">
+          <button data-copy="${h.id}" title="Копия">${ICON.copy}</button>
+          <button data-edit="${h.id}" title="Изменить">${ICON.edit}</button>
+          <button class="rm" data-del="${h.id}" title="Удалить">${ICON.del}</button>
+        </div>`;
+      box.appendChild(el);
+    });
+  }
+  document.querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>complete(+b.dataset.done));
+  document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>
+    openForm(hist.find(x=>x.id===+b.dataset.copy),'copy'));
+  document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>
+    openForm(hist.find(x=>x.id===+b.dataset.edit),'edit'));
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+    const h=hist.find(x=>x.id===+b.dataset.del);
+    if(!confirm('Удалить операцию? Остатки на счетах вернутся к прежним.'))return;
+    revert(h); hist=hist.filter(x=>x.id!==h.id); drawMain(); toast('Операция удалена');
+  });
+}
+const human=i=>{
+  const d=new Date(i+'T00:00:00'),t=new Date();t.setHours(0,0,0,0);
+  const df=Math.round((t-d)/864e5);
+  if(df===0)return 'Сегодня'; if(df===1)return 'Вчера';
+  return d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
+};
+
+/* откат остатков: для зависшего перевода получатель денег так и не увидел */
+function revert(h){
+  acc(h.fromId).bal+=h.amt1;
+  if(!h.pending)acc(h.toId).bal-=h.amt2;
+}
+
+/* завершение зависшего перевода: деньги переезжают из транзита на счёт назначения */
+function complete(id){
+  const h=hist.find(x=>x.id===id);
+  acc(h.toId).bal+=h.amt2;
+  h.pending=false; h.wasPending=true;
+  drawMain(); toast('Перевод завершён');
+}
+
+/* ═══ форма ═══ */
+function drawChips(){
+  $('#from').innerHTML='';
+  ACC.forEach(a=>{
+    const b=document.createElement('button');
+    b.className='chip'+(from&&from.id===a.id?' on':'');
+    b.innerHTML=`<span>${a.name}</span><span class="bal">${fmt(a.bal)} ${a.sign}</span>`;
+    b.onclick=()=>{from=a; if(to&&to.id===a.id)to=null; refresh()};
+    $('#from').appendChild(b);
+  });
+  $('#to').innerHTML='';
+  ACC.forEach(a=>{
+    const b=document.createElement('button');
+    const same=from&&from.id===a.id;
+    b.className='chip'+(to&&to.id===a.id?' on':'')+(same?' off':'');
+    b.innerHTML=`<span>${a.name}</span><span class="bal">${fmt(a.bal)} ${a.sign}</span>`;
+    b.onclick=()=>{to=a; refresh()};
+    $('#to').appendChild(b);
+  });
+}
+
+function refresh(){
+  drawChips();
+  $('#c1').textContent=from?from.sign:'';
+  $('#c2').textContent=to?to.sign:'';
+  $('#fTitle').textContent=isConv()?'Конвертация':'Перевод';
+  $('#conv').hidden=!isConv();
+
+  // остаток на счёте-источнике после операции
+  $('#after1').textContent = (from&&A1()) ? `На счёте останется ${fmt(from.bal-A1())} ${from.sign}` : '';
+
+  if(isConv()&&A1()&&A2()){
+    // курс показываем в ту сторону, где число больше единицы, иначе «1 RUB = 0,01 USD»
+    const r1=A1()/A2();                       // сколько «откуда» за единицу «куда»
+    const cb1=RATE[to.cur]/RATE[from.cur];    // то же по курсу ЦБ
+    const flip=r1<1;
+    const my  = flip?1/r1 :r1;
+    const cb  = flip?1/cb1:cb1;
+    const one = flip?from.cur:to.cur;
+    const per = flip?to.cur  :from.cur;
+    // сравниваем не курсы, а потерю стоимости — она не зависит от направления
+    const baseFrom=A1()*RATE[from.cur], baseTo=A2()*RATE[to.cur];
+    const loss=(baseFrom-baseTo)/baseFrom*100;
+    const bad=Math.abs(loss)>5;
+    $('#fx').innerHTML=`<div class="fxbox ${bad?'warn':''}">
+        Ваш курс: <span class="r">1 ${one} = ${num(my)} ${per}</span>
+        <small>По курсу ЦБ — ${num(cb)}. ${
+          loss>0.005 ? `На обмене потеряно ${loss.toFixed(2)}% стоимости`
+          : loss<-0.005 ? `Обмен выгоднее курса ЦБ на ${(-loss).toFixed(2)}%`
+          : 'Ровно по курсу ЦБ'}${
+          bad?' — проверьте суммы, похоже на опечатку'
+             :' — это наценка обменника, она осядет в учёте сама'}</small>
+      </div>`;
+  } else $('#fx').innerHTML='';
+
+  const ok = from&&to&&from.id!==to.id&&A1()>0&&(!isConv()||A2()>0);
+  $('#save').disabled=!ok;
+  if(!$('#ledger').hidden)drawLedger();
+}
+
+/* ═══ проводка ═══ */
+function lines(){
+  if(!from||!to||!A1())return[];
+  const pend=$('#pend').checked;
+  const dst=pend?TRANSIT:to;
+  const amt2=isConv()?A2():A1();
+  const base=A1()*RATE[from.cur];
+  const dstAmt=pend?base:amt2;                       // в пути деньги стоят в базовой валюте
+  const dstRate=pend?1:base/amt2;
+  return [
+    {s:'К',a:'Деньги · '+from.name,m:A1(),c:from.cur,r:RATE[from.cur]},
+    {s:'Д',a:(pend?'':'Деньги · ')+dst.name,m:dstAmt,c:dst.cur,r:dstRate}
+  ];
+}
+function drawLedger(){
+  const L=lines();
+  if(!L.length){$('#ledger').innerHTML='<span class="k">выберите счета и сумму</span>';return}
+  const d=L.filter(l=>l.s==='Д').reduce((x,l)=>x+l.m*l.r,0);
+  const c=L.filter(l=>l.s==='К').reduce((x,l)=>x+l.m*l.r,0);
+  const kind=$('#pend').checked?'transfer · в пути':(isConv()?'conversion':'transfer');
+  $('#ledger').innerHTML=`
+    <div class="k">transaction · kind=${kind} · ${$('#date').value} · контур ${BASE} · без статьи</div><hr>
+    <table>${L.map(l=>`<tr><td class="${l.s==='Д'?'d':'c'}">${l.s}</td><td>&nbsp;${l.a}</td>
+      <td class="n">${fmt(l.m)} ${l.c}${l.r!==1?` <span class="k">×${fmt(l.r)}</span>`:''}</td></tr>`).join('')}</table><hr>
+    <div class="inv"><span>Σ base(Д) = Σ base(К)</span>
+      <span>${fmt(d)} = ${fmt(c)} ${Math.abs(d-c)<0.01?'✓':'✗'}</span></div>`;
+}
+
+/* ═══ сохранение ═══ */
+function save(){
+  const pend=$('#pend').checked, conv=isConv();
+  const amt2=conv?A2():A1();
+  if(editId){                                   // правка: сначала откатываем прежние остатки
+    const old=hist.find(x=>x.id===editId);
+    revert(old); hist=hist.filter(x=>x.id!==editId);
+  }
+  from.bal-=A1();
+  if(!pend)to.bal+=amt2;
+  hist.unshift({
+    id:editId||seq++, date:$('#date').value, desc:$('#desc').value.trim(),
+    fromId:from.id, toId:to.id, fromName:from.name, toName:to.name,
+    amt1:A1(), amt2, cur1:from.cur, cur2:to.cur, sign1:from.sign, sign2:to.sign,
+    pending:pend, wasPending:false
+  });
+  toast(editId?'Изменения сохранены'
+        :pend?`Отправлено · ждём поступления · касаний ${taps}`
+             :`${conv?'Конвертация':'Перевод'} записан · касаний ${taps}`);
+  editId=null; drawMain(); closeForm();
+}
+function openForm(rec=null,mode='new'){
+  editId = mode==='edit' ? rec.id : null;
+  from=ACC[0]; to=null; taps=0;
+  $('#a1').value=''; $('#a2').value=''; $('#desc').value='';
+  $('#pend').checked=false; $('#descCard').hidden=true;
+  $('#date').valueAsDate=new Date();
+  if(rec){
+    from=acc(rec.fromId)||ACC[0]; to=acc(rec.toId)||null;
+    $('#a1').value=fmt(rec.amt1);
+    if(rec.cur1!==rec.cur2)$('#a2').value=fmt(rec.amt2);
+    $('#desc').value=rec.desc||''; $('#descCard').hidden=!rec.desc;
+    // копия — всегда сегодняшняя дата и чистое состояние; правка сохраняет исходные
+    if(mode==='edit'){ $('#date').value=rec.date; $('#pend').checked=!!rec.pending; }
+  }
+  $('#save').textContent = editId?'Сохранить изменения':'Сохранить';
+  $('#tapN').textContent=0;
+  $('#form').hidden=false; document.body.style.overflow='hidden';
+  refresh(); $('#form').scrollTop=0;
+  if(mode==='copy')toast('Поля заполнены · дата сегодняшняя');
+}
+function closeForm(){$('#form').hidden=true;document.body.style.overflow=''}
+
+/* ═══ события ═══ */
+$('#open').onclick=openForm;
+$('#close').onclick=()=>{editId=null;closeForm()};
+$('#save').onclick=save;
+['a1','a2'].forEach(id=>{
+  $('#'+id).addEventListener('input',refresh);
+  $('#'+id).addEventListener('blur',e=>{const v=parse(e.target.value);e.target.value=v?fmt(v):''});
+  $('#'+id).addEventListener('focus',e=>{const v=parse(e.target.value);e.target.value=v?String(v).replace('.',','):''});
+});
+$('#pend').onchange=refresh;
+$('#bDesc').onclick=()=>{$('#descCard').hidden=!$('#descCard').hidden;if(!$('#descCard').hidden)$('#desc').focus()};
+$('#ledToggle').onclick=()=>{
+  const l=$('#ledger');l.hidden=!l.hidden;
+  $('#ledToggle').textContent=l.hidden?'▸ показать проводку':'▾ скрыть проводку';
+  if(!l.hidden)drawLedger();
+};
+drawMain();
+</script>
+</body>
+</html>

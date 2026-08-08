@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Гроссбух — имущество и долги</title>
+<style>
+:root{
+  --paper:#E9EDF1; --card:#FFFFFF; --ink:#0F1A21; --soft:#5C6C78;
+  --line:#D8E0E7; --accent:#0E6E62; --accent-bg:#E0EFEC;
+  --clay:#A9501F; --clay-bg:#F6E9E1; --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--paper)}
+body{color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:430px;margin:0 auto;padding:0 14px 110px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+
+.head{display:flex;align-items:baseline;justify-content:space-between;padding:18px 2px 14px}
+.head h1{font-size:19px;font-weight:650;margin:0}
+.head span{font-size:12px;color:var(--soft)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.lbl{display:block;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--soft);margin-bottom:9px}
+h2.sec{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--soft);margin:20px 0 9px 2px}
+.empty{color:var(--soft);font-size:13px;padding:2px}
+
+.row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.row:last-child{border-bottom:none}
+.row:active{background:var(--accent-bg);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:8px}
+.row .n{flex:1;min-width:0}
+.row .n b{font-weight:500;font-size:14.5px}
+.row .n small{display:block;color:var(--soft);font-size:11.5px;margin-top:2px}
+.row .n small.warn{color:var(--clay)}
+.row .v{font-size:15px;font-weight:600;white-space:nowrap;text-align:right}
+.row .go{color:#C3CDD5;font-size:17px;margin-left:10px}
+.v.plus{color:var(--accent)} .v.minus{color:var(--clay)}
+.oblig{display:flex;justify-content:space-between;font-size:12px;color:var(--soft);padding:1px 0}
+.oblig span:last-child{font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.heroList{margin-top:12px;padding-top:12px;border-top:1px solid #24333D}
+.heroList div{display:flex;justify-content:space-between;font-size:13px;color:#C8D6DE;padding:3px 0}
+.heroList b{font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums;font-weight:600}
+.total{display:flex;justify-content:space-between;padding-top:12px;margin-top:6px;border-top:1px solid var(--line);font-weight:650}
+
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:9px 12px;font-size:14px;
+      cursor:pointer;color:var(--ink);display:flex;align-items:center;gap:7px}
+.chip:active{transform:scale(.97)}
+.chip.on{border-color:var(--accent);background:var(--accent-bg);font-weight:600}
+.chip .bal{font:11px/1 ui-monospace,monospace;color:var(--soft)}
+.chip.on .bal{color:var(--accent)}
+
+input{border:1px solid var(--line);border-radius:9px;padding:11px 12px;font:15px system-ui,sans-serif;
+      outline:none;background:var(--card);color:var(--ink);width:100%}
+input:focus{border-color:var(--accent)}
+.amount-row{display:flex;align-items:baseline;justify-content:center;gap:6px}
+.amt{font:600 38px/1 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;
+     border:none;outline:none;text-align:right;width:100%;max-width:236px;background:transparent;padding:4px 0;color:var(--ink)}
+.amt::placeholder{color:#C3CDD5}
+.cur{font:500 21px/1 ui-monospace,monospace;color:var(--soft)}
+.sum{display:flex;justify-content:space-between;margin-top:12px;padding:10px 12px;border-radius:9px;
+     background:var(--accent-bg);color:var(--accent);font-size:13.5px}
+.sum b{font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.sum.warn{background:var(--clay-bg);color:var(--clay)}
+
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.acts button{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:13px 10px;
+             font-size:14px;color:var(--ink);cursor:pointer;text-align:left}
+.acts button:active{border-color:var(--accent);color:var(--accent)}
+.acts button.wide{grid-column:1/-1}
+.acts button small{display:block;color:var(--soft);font-size:11.5px;margin-top:3px}
+
+.hero{background:var(--ink);color:#fff;border-radius:var(--r);padding:18px;margin-bottom:12px}
+.hero .k{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:#8FA5B0}
+.hero .v{font-size:30px;font-weight:600;margin-top:6px;font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.hero .s{font-size:12px;color:#8FA5B0;margin-top:7px;line-height:1.4}
+
+.nudge{background:var(--clay-bg);color:var(--clay);border-radius:10px;padding:12px 13px;margin-bottom:10px;font-size:13px;line-height:1.4}
+.nudge button{margin-top:9px;border:1px solid var(--clay);background:none;color:var(--clay);
+              border-radius:8px;padding:8px 13px;font-size:13px;font-weight:600;cursor:pointer}
+
+.op{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:7px}
+.op-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.op-t{font-size:14px}
+.op-s{font-size:12px;color:var(--soft);margin-top:3px}
+.op-a{font-size:14px;font-weight:600;white-space:nowrap}
+.op-a .plus{color:var(--accent)} .op-a .minus{color:var(--clay)}
+.op-act{display:flex;gap:6px;margin-top:11px}
+.op-act button{border:1px solid var(--line);background:var(--card);border-radius:8px;width:40px;height:36px;
+               display:flex;align-items:center;justify-content:center;color:var(--soft);cursor:pointer}
+.op-act button:active{border-color:var(--accent);color:var(--accent)}
+.op-act .rm.armed{border-color:var(--clay);background:var(--clay-bg);color:var(--clay);
+                  width:auto;padding:0 12px;font-size:12.5px;font-weight:600;gap:6px}
+.dgrp{font-size:12px;font-weight:600;margin:14px 2px 8px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+.filter{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 10px;-webkit-overflow-scrolling:touch}
+.filter button{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:7px 13px;
+               font-size:13px;color:var(--soft);cursor:pointer;white-space:nowrap}
+.filter button.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent);font-weight:600}
+
+.bar{position:fixed;left:0;right:0;bottom:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+     background:linear-gradient(to top,var(--paper) 74%,transparent);z-index:5}
+.bar .in{max-width:430px;margin:0 auto}
+.big{width:100%;border:none;border-radius:12px;padding:16px;background:var(--accent);color:#fff;
+     font-size:16px;font-weight:600;cursor:pointer}
+.big:disabled{background:#B8C4CC}
+.big:active:not(:disabled){opacity:.88}
+
+.screen{position:fixed;inset:0;background:var(--paper);overflow-y:auto;z-index:10}
+.screen[hidden]{display:none}
+.fhead{display:flex;align-items:center;gap:10px;padding:16px 2px 12px}
+.fhead .x{border:none;background:none;font-size:24px;color:var(--soft);cursor:pointer;padding:0 4px}
+.fhead h1{font-size:17px;font-weight:650;margin:0;flex:1;line-height:1.25}
+.fhead h1 small{display:block;font-size:12.5px;font-weight:400;color:var(--soft);margin-top:2px}
+.datechip{font-size:13px;color:var(--soft);background:var(--card);border:1px solid var(--line);
+          border-radius:20px;padding:7px 12px}
+.datechip input{border:none;background:none;font:inherit;color:inherit;width:100px;padding:0;outline:none}
+
+.sheet{position:fixed;inset:0;background:rgba(15,26,33,.45);z-index:20;display:flex;align-items:flex-end}
+.sheet[hidden]{display:none}
+.sheet .in{background:var(--paper);width:100%;max-width:430px;margin:0 auto;
+           border-radius:18px 18px 0 0;padding:18px 14px calc(18px + env(safe-area-inset-bottom))}
+.sheet h3{margin:0 0 12px;font-size:16px}
+
+.led-head{width:100%;background:none;border:none;color:var(--soft);font-size:13px;padding:13px 2px;cursor:pointer}
+.ledger{background:#0F1A21;color:#C8D6DE;border-radius:var(--r);padding:14px;margin-bottom:12px;
+        font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;overflow-x:auto}
+.ledger .k{color:#5C7A88} .ledger .d{color:#7FD1C1} .ledger .c{color:#E8B08A}
+.ledger table{border-collapse:collapse;width:100%}
+.ledger td{padding:2px 0}
+.ledger td.n{text-align:right;padding-left:12px;white-space:nowrap}
+.ledger hr{border:none;border-top:1px solid #24333D;margin:9px 0}
+.inv{display:flex;justify-content:space-between;color:#7FD1C1}
+
+#toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,60px);background:var(--ink);color:#fff;
+       padding:12px 18px;border-radius:11px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:99}
+#toast.show{transform:translate(-50%,0);opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="main">
+  <div class="head"><h1>Имущество и долги</h1><span id="today"></span></div>
+  <div id="nudges"></div>
+  <div class="card"><span class="lbl">Имущество</span><div id="propList"></div></div>
+  <div class="card"><span class="lbl">Вам должны</span><div id="oweList"></div></div>
+  <div class="card"><span class="lbl">Вы должны</span><div id="debtList"></div></div>
+  <div class="card"><span class="lbl">Деньги</span><div id="cashList"></div></div>
+  <h2 class="sec">Все операции</h2>
+  <div class="filter" id="filter"></div>
+  <div id="hist"></div>
+</div>
+<div class="bar"><div class="in"><button class="big" id="plus">+ Добавить</button></div></div>
+
+<div class="screen" id="obj" hidden>
+ <div class="wrap">
+  <div class="fhead"><button class="x" id="objBack">←</button><h1 id="objTitle"></h1></div>
+  <div class="hero"><div class="k" id="objKind"></div><div class="v" id="objVal"></div><div class="s" id="objSub"></div></div>
+  <div id="objNudge"></div>
+  <div class="card"><span class="lbl">Что можно сделать</span><div class="acts" id="objActs"></div></div>
+  <h2 class="sec">История по объекту</h2>
+  <div id="objHist"></div>
+ </div>
+</div>
+
+<div class="screen" id="form" hidden>
+ <div class="wrap">
+  <div class="fhead">
+    <button class="x" id="close">×</button>
+    <h1 id="fTitle"></h1>
+    <label class="datechip">📅<input type="date" id="date"></label>
+  </div>
+  <div class="card" id="ctrCard" hidden>
+    <span class="lbl">Контрагент</span>
+    <div class="chips" id="ctrChips"></div>
+    <input id="ctrNew" placeholder="или впишите нового" style="margin-top:10px">
+  </div>
+  <div class="card" id="nameCard" hidden>
+    <span class="lbl" id="nameLbl">Название</span>
+    <input id="fname" placeholder="">
+  </div>
+  <div class="card" id="obCard" hidden>
+    <span class="lbl" id="obLbl">Обязательство</span>
+    <div class="chips" id="obChips"></div>
+    <input id="obNew" placeholder="или впишите новое" style="margin-top:10px">
+  </div>
+  <div class="card" id="amtCard">
+    <span class="lbl" id="amtLbl">Сумма</span>
+    <div class="amount-row"><input class="amt" id="amt" inputmode="decimal" placeholder="0"><span class="cur">₽</span></div>
+    <div id="amtExtra"></div>
+  </div>
+  <div class="card" id="noteCard" hidden>
+    <span class="lbl">Причина</span>
+    <input id="fnote" placeholder="Необязательно: потеряно, сломалось, украдено">
+  </div>
+  <div class="card" id="moneyCard">
+    <span class="lbl" id="moneyLbl">Счёт</span>
+    <div class="chips" id="money"></div>
+  </div>
+  <button class="led-head" id="ledToggle">▸ показать проводку</button>
+  <div class="ledger" id="ledger" hidden></div>
+  <button class="big" id="save" disabled style="margin:6px 0 8px">Сохранить</button>
+  <div id="hint" class="op-s" style="text-align:center;margin-bottom:22px"></div>
+ </div>
+</div>
+
+<div class="sheet" id="sheet" hidden><div class="in">
+  <h3>Что добавить?</h3>
+  <div class="acts">
+    <button class="wide" data-a="prop_buy">Купить имущество<small>Квартира, машина, техника</small></button>
+    <button class="wide" data-a="loan_give">Дать в долг<small>Деньги, которые вам вернут</small></button>
+    <button class="wide" data-a="debt_take">Взять в долг<small>Заём или кредит</small></button>
+  </div>
+</div></div>
+
+<div id="toast"></div>
+<script>
+const SIGN='₽';
+/* Обязательство — это счёт, контрагент — группа над ним.
+   Ипотека и автокредит одного банка живут отдельными строками. */
+const PROP=[
+  {id:1,name:'Квартира',  bal:5000000,last:'2023-04-10'},
+  {id:2,name:'Ноутбук',   bal:95000,  last:'2026-02-01'},
+  {id:3,name:'Велосипед', bal:42000,  last:'2019-06-15'}
+];
+const DEBT=[
+  {id:1,ctr:'Игорь',        title:'До зарплаты', kind:'owe',  bal:10000},
+  {id:2,ctr:'Сбербанк',     title:'Ипотека',     kind:'debt', bal:1235400},
+  {id:3,ctr:'Сбербанк',     title:'Автокредит',  kind:'debt', bal:500000},
+  {id:4,ctr:'Маша Степина', title:'Заём',        kind:'debt', bal:25000}
+];
+const MONEY=[{id:11,name:'Альфа-Банк',bal:48250},{id:12,name:'Наличные',bal:7300}];
+const CAP='Капитал · заработанный', REV='Капитал · от переоценки';
+const ICON={
+  copy:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
+  edit:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`,
+  del:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/>
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`
+};
+const KINDS={prop_buy:'Имущество',prop_revalue:'Имущество',prop_sell:'Имущество',prop_writeoff:'Имущество',
+             loan_give:'Долги',loan_return:'Долги',debt_take:'Долги',debt_repay:'Долги'};
+
+let hist=[], seq=1, kind=null, obj=null, money=MONEY[0], editId=null, filter='all', ctrPick=null;
+
+const $=s=>document.querySelector(s);
+const fmt=n=>(n||0).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
+const parse=s=>{const v=parseFloat(String(s).replace(/\s/g,'').replace(',','.'));return isNaN(v)?0:v};
+const AMT=()=>parse($('#amt').value);
+const P=id=>PROP.find(x=>x.id===id), D=id=>DEBT.find(x=>x.id===id), M=id=>MONEY.find(x=>x.id===id);
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400)}
+const human=i=>new Date(i+'T00:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
+const short=i=>{const d=new Date(i+'T00:00:00'),t=new Date();t.setHours(0,0,0,0);
+  const f=Math.round((t-d)/864e5); if(f===0)return 'Сегодня'; if(f===1)return 'Вчера';
+  return d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})};
+const years=i=>Math.floor((new Date()-new Date(i+'T00:00:00'))/(365.25*864e5));
+
+/* ═══ применение операции: dir=+1 применить, dir=−1 откатить ═══ */
+function apply(r,dir){
+  const p=r.propId?P(r.propId):null, d=r.debtId?D(r.debtId):null, m=r.moneyId?M(r.moneyId):null;
+  switch(r.kind){
+    case 'prop_buy':      p.bal+=dir*r.amt; m.bal-=dir*r.amt; break;
+    case 'prop_revalue':  p.bal+=dir*r.delta; break;
+    case 'prop_sell':     p.bal-=dir*r.cost; m.bal+=dir*r.amt; break;
+    case 'prop_writeoff': p.bal-=dir*r.cost; break;
+    case 'loan_give':     d.bal+=dir*r.amt; m.bal-=dir*r.amt; break;
+    case 'loan_return':   d.bal-=dir*r.amt; m.bal+=dir*r.amt; break;
+    case 'debt_take':     d.bal+=dir*r.amt; m.bal+=dir*r.amt; break;
+    case 'debt_repay':    d.bal-=dir*r.amt; m.bal-=dir*r.amt; break;
+  }
+}
+/* остаток «как если бы правимой операции не было» */
+function eff(kindOf,o){
+  let b=o.bal;
+  const r=editId?hist.find(x=>x.id===editId):null;
+  if(r&&((kindOf==='p'&&r.propId===o.id)||(kindOf==='d'&&r.debtId===o.id)||(kindOf==='m'&&r.moneyId===o.id))){
+    const save=o.bal; apply(r,-1); b=o.bal; o.bal=save;
+  }
+  return b;
+}
+
+/* ═══ главный экран ═══ */
+function drawMain(){
+  $('#today').textContent=new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
+
+  const old=PROP.filter(p=>years(p.last)>=2);
+  $('#nudges').innerHTML=old.map(p=>`<div class="nudge">
+      «${p.name}» не переоценивали ${years(p.last)} года — с ${human(p.last)}.
+      <button data-rev="${p.id}">Уточнить стоимость</button></div>`).join('');
+
+  $('#propList').innerHTML=PROP.map(p=>`<div class="row" data-obj="p${p.id}">
+      <div class="n"><b>${p.name}</b><small class="${years(p.last)>=2?'warn':''}">оценка от ${human(p.last)}</small></div>
+      <div class="v mono">${fmt(p.bal)} ${SIGN}</div><span class="go">›</span></div>`).join('')
+    +`<div class="total"><span>Итого</span><span class="mono">${fmt(PROP.reduce((s,p)=>s+p.bal,0))} ${SIGN}</span></div>`;
+
+  // строка списка — контрагент; обязательства перечислены под ним мелко
+  ['owe','debt'].forEach(k=>{
+    const list=DEBT.filter(d=>d.kind===k);
+    const box=$(k==='owe'?'#oweList':'#debtList');
+    if(!list.length){box.innerHTML='<div class="empty">Пусто</div>';return}
+    const byCtr={}; list.forEach(d=>{(byCtr[d.ctr]=byCtr[d.ctr]||[]).push(d)});
+    box.innerHTML=Object.keys(byCtr).map(c=>{
+      const arr=byCtr[c], sum=arr.reduce((s,d)=>s+d.bal,0);
+      const sub = arr.length===1 ? arr[0].title
+        : arr.map(d=>`<div class="oblig"><span>${d.title}</span><span>${fmt(d.bal)}</span></div>`).join('');
+      return `<div class="row" data-obj="c${k}|${c}">
+        <div class="n"><b>${c}</b>${arr.length===1?`<small>${sub}</small>`:`<div style="margin-top:4px">${sub}</div>`}</div>
+        <div class="v mono ${k==='owe'?'plus':'minus'}">${fmt(sum)} ${SIGN}</div><span class="go">›</span></div>`;
+    }).join('')
+    +`<div class="total"><span>Итого</span><span class="mono">${fmt(list.reduce((s,d)=>s+d.bal,0))} ${SIGN}</span></div>`;
+  });
+
+  $('#cashList').innerHTML=MONEY.map(m=>
+    `<div class="row" style="cursor:default"><div class="n"><b>${m.name}</b></div>
+     <div class="v mono">${fmt(m.bal)} ${SIGN}</div></div>`).join('');
+
+  drawFilter(); drawHist();
+  document.querySelectorAll('[data-obj]').forEach(r=>r.onclick=()=>openObj(r.dataset.obj));
+  document.querySelectorAll('[data-rev]').forEach(b=>b.onclick=e=>{
+    e.stopPropagation(); obj={t:'p',o:P(+b.dataset.rev)}; openForm('prop_revalue');
+  });
+}
+
+function drawFilter(){
+  const opts=[['all','Все'],['Имущество','Имущество'],['Долги','Долги']];
+  $('#filter').innerHTML=opts.map(([v,l])=>
+    `<button data-f="${v}" class="${filter===v?'on':''}">${l}</button>`).join('');
+  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{filter=b.dataset.f;drawFilter();drawHist()});
+}
+
+function drawHist(box=$('#hist'),list=null){
+  let rows = list || hist.filter(h=>filter==='all'||KINDS[h.kind]===filter);
+  if(!rows.length){box.innerHTML='<div class="empty">Операций пока не было</div>';return}
+  rows=[...rows].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);
+  let cur=null; box.innerHTML='';
+  rows.forEach(h=>{
+    if(h.date!==cur&&!list){cur=h.date;
+      const g=document.createElement('div');g.className='dgrp';g.textContent=short(cur);box.appendChild(g)}
+    const el=document.createElement('div'); el.className='op';
+    el.innerHTML=`<div class="op-top">
+        <div><div class="op-t">${h.title}</div><div class="op-s">${short(h.date)}${h.note?' · '+h.note:''}</div></div>
+        <div class="op-a mono"><span class="${h.sign>0?'plus':'minus'}">${h.sign>0?'+':'−'}${fmt(Math.abs(h.amt))} ${SIGN}</span></div>
+      </div>
+      <div class="op-act">
+        <button data-copy="${h.id}" title="Копия">${ICON.copy}</button>
+        <button data-edit="${h.id}" title="Изменить">${ICON.edit}</button>
+        <button class="rm" data-del="${h.id}" title="Удалить">${ICON.del}</button>
+      </div>`;
+    box.appendChild(el);
+  });
+  bindOps(box);
+}
+function bindOps(box){
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+    const h=hist.find(x=>x.id===+b.dataset.del);
+    if(b.dataset.arm!=='1'){
+      box.querySelectorAll('[data-del]').forEach(o=>{o.dataset.arm='0';o.classList.remove('armed');o.innerHTML=ICON.del});
+      b.dataset.arm='1'; b.classList.add('armed'); b.innerHTML=ICON.del+' Удалить?';
+      setTimeout(()=>{if(b.dataset.arm==='1'){b.dataset.arm='0';b.classList.remove('armed');b.innerHTML=ICON.del}},4000);
+      return;
+    }
+    apply(h,-1); hist=hist.filter(x=>x.id!==h.id);
+    drawMain(); if(!$('#obj').hidden&&obj)openObj(obj.t+obj.o.id);
+    toast('Операция удалена');
+  });
+  box.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openRec(+b.dataset.edit,'edit'));
+  box.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>openRec(+b.dataset.copy,'copy'));
+}
+function openRec(id,how){
+  const h=hist.find(x=>x.id===id);
+  if(h.propId) obj={t:'p',o:P(h.propId)};
+  else if(h.debtId){const d=D(h.debtId); obj={t:'c',ctr:d.ctr,kind:d.kind}}
+  else obj=null;
+  if(h.moneyId)money=M(h.moneyId);
+  openForm(h.kind, how==='edit'?h:null, how);
+}
+
+/* ═══ карточка объекта ═══ */
+function openObj(key){
+  if(key[0]==='p'){
+    obj={t:'p', o:P(+key.slice(1))};
+    const o=obj.o;
+    $('#objTitle').innerHTML=o.name;
+    $('#objKind').textContent='Имущество · оценка в учёте';
+    $('#objVal').textContent=fmt(o.bal)+' '+SIGN;
+    $('#objSub').innerHTML='Последняя оценка — '+human(o.last);
+    $('#objNudge').innerHTML = years(o.last)>=2
+      ? `<div class="nudge">Прошло ${years(o.last)} года с последней оценки.
+         <button data-act="prop_revalue">Уточнить стоимость</button></div>` : '';
+    $('#objActs').innerHTML=`
+      <button data-act="prop_revalue">Переоценить<small>Изменилась стоимость</small></button>
+      <button data-act="prop_sell">Продать<small>Получить деньги</small></button>
+      <button data-act="prop_writeoff" class="wide">Списать<small>Потеряно, украдено, сломалось</small></button>`;
+    drawHist($('#objHist'), hist.filter(h=>h.propId===o.id));
+  } else {
+    // key вида c{kind}|{контрагент}
+    const kd=key.slice(1,key.indexOf('|')), name=key.slice(key.indexOf('|')+1);
+    obj={t:'c', ctr:name, kind:kd};
+    const arr=DEBT.filter(d=>d.ctr===name&&d.kind===kd);
+    const sum=arr.reduce((s,d)=>s+d.bal,0);
+    $('#objTitle').innerHTML=name;
+    $('#objKind').textContent = kd==='owe'?'Вам должны':'Вы должны';
+    $('#objVal').textContent=fmt(sum)+' '+SIGN;
+    $('#objSub').innerHTML = arr.length>1 ? `${arr.length} обязательства` : arr[0].title;
+    // все обязательства контрагента — прямо в шапке
+    $('#objSub').innerHTML += arr.length>1
+      ? `<div class="heroList">${arr.map(d=>`<div><span>${d.title}</span><b>${fmt(d.bal)} ${SIGN}</b></div>`).join('')}</div>`
+      : '';
+    $('#objNudge').innerHTML='';
+    $('#objActs').innerHTML = kd==='owe' ? `
+      <button data-act="loan_give">Дать ещё<small>Новый или к текущему</small></button>
+      <button data-act="loan_return">Вернули<small>Долг погашают вам</small></button>` : `
+      <button data-act="debt_take">Взять ещё<small>Новый или к текущему</small></button>
+      <button data-act="debt_repay">Погасить<small>Вернуть часть или всё</small></button>`;
+    const ids=arr.map(d=>d.id);
+    drawHist($('#objHist'), hist.filter(h=>ids.includes(h.debtId)));
+  }
+  $('#obj').querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>openForm(b.dataset.act));
+  $('#obj').hidden=false; document.body.style.overflow='hidden'; $('#obj').scrollTop=0;
+}
+
+/* ═══ форма ═══ */
+const CFG={
+  prop_buy:      {t:'Покупка имущества', name:'Название вещи', amt:'Сколько заплатили', mon:'Откуда деньги'},
+  prop_revalue:  {t:'Переоценка',        amt:'Новая оценка'},
+  prop_sell:     {t:'Продажа',           amt:'Цена продажи',   mon:'Куда зачислить'},
+  prop_writeoff: {t:'Списание',          note:1},
+  loan_give:     {t:'Дать в долг',   ctr:1, ob:'new', kd:'owe',  amt:'Сколько', mon:'Откуда деньги'},
+  loan_return:   {t:'Возврат долга', ctr:1, ob:'pick',kd:'owe',  amt:'Сколько вернули', mon:'Куда зачислить'},
+  debt_take:     {t:'Взять в долг',  ctr:1, ob:'new', kd:'debt', amt:'Сколько', mon:'Куда пришли'},
+  debt_repay:    {t:'Погашение долга',ctr:1,ob:'pick',kd:'debt', amt:'Сколько платите', mon:'Откуда деньги'}
+};
+let obPick=null;                                   // выбранное обязательство
+
+function openForm(k,rec=null,how='new'){
+  kind=k; editId = how==='edit'&&rec ? rec.id : null;
+  const c=CFG[k];
+  obPick = rec&&rec.debtId ? rec.debtId : null;
+  $('#date').value = (how==='edit'&&rec) ? rec.date : new Date().toISOString().slice(0,10);
+  $('#amt').value = rec ? fmt(rec.kind==='prop_revalue' ? P(rec.propId).bal : rec.amt) : '';
+  $('#fname').value=''; $('#ctrNew').value=''; $('#obNew').value='';
+  $('#fnote').value = rec&&rec.note2 ? rec.note2 : '';
+  if(!obj&&rec&&rec.debtId){const d=D(rec.debtId); obj={t:'c',ctr:d.ctr,kind:d.kind}}
+  ctrPick = obj&&obj.t==='c' ? obj.ctr : null;
+
+  // заголовок всегда называет объект: «Дать в долг · Игорь»
+  const named = obj ? (obj.t==='p'?obj.o.name:obj.ctr) : '';
+  $('#fTitle').innerHTML = c.t + (named?`<small>${named}</small>`:'');
+
+  $('#ctrCard').hidden = !(c.ctr && !(obj&&obj.t==='c'));
+  $('#obCard').hidden  = !c.ctr;
+  $('#obLbl').textContent = c.ob==='pick' ? 'По какому обязательству' : 'К какому обязательству';
+  $('#obNew').hidden = c.ob!=='new';
+  $('#nameCard').hidden = !(c.name && !obj);
+  $('#nameLbl').textContent=c.name||'';
+  $('#noteCard').hidden = !c.note;
+  $('#amtCard').hidden = k==='prop_writeoff';
+  $('#amtLbl').textContent=c.amt||'';
+  $('#moneyCard').hidden=!c.mon;
+  $('#moneyLbl').textContent=c.mon||'';
+  $('#save').textContent = editId?'Сохранить изменения':'Сохранить';
+  if(!$('#ctrCard').hidden)drawCtr();
+  if(!$('#obCard').hidden)drawOb();
+  drawMoney(); refresh();
+  $('#form').hidden=false; document.body.style.overflow='hidden'; $('#form').scrollTop=0;
+  if(how==='copy')toast('Поля заполнены · дата сегодняшняя');
+}
+
+function drawCtr(){
+  const names=[...new Set(DEBT.map(d=>d.ctr))];
+  $('#ctrChips').innerHTML='';
+  names.forEach(n=>{
+    const b=document.createElement('button');
+    b.className='chip'+(ctrPick===n?' on':'');
+    b.textContent=n;
+    b.onclick=()=>{ctrPick=n;$('#ctrNew').value='';obPick=null;drawCtr();drawOb();refresh()};
+    $('#ctrChips').appendChild(b);
+  });
+}
+/* обязательства выбранного контрагента: выбрать существующее или завести новое */
+function drawOb(){
+  const c=CFG[kind], name=ctrPick||$('#ctrNew').value.trim();
+  const arr=DEBT.filter(d=>d.ctr===name&&d.kind===c.kd);
+  const box=$('#obChips'); box.innerHTML='';
+  arr.forEach(d=>{
+    const b=document.createElement('button');
+    b.className='chip'+(obPick===d.id?' on':'');
+    b.innerHTML=`<span>${d.title}</span><span class="bal">${fmt(d.bal)} ${SIGN}</span>`;
+    b.onclick=()=>{obPick=d.id;$('#obNew').value='';drawOb();refresh()};
+    box.appendChild(b);
+  });
+  if(c.ob==='new'){
+    const b=document.createElement('button');
+    b.className='chip'+(obPick===null&&$('#obNew').value.trim()===''?'':'');
+    b.textContent='+ новое';
+    b.onclick=()=>{obPick=null;drawOb();$('#obNew').focus();refresh()};
+    box.appendChild(b);
+  }
+  if(!arr.length&&c.ob==='pick')box.innerHTML='<div class="empty">Обязательств нет</div>';
+}
+
+function drawMoney(){
+  $('#money').innerHTML='';
+  MONEY.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='chip'+(money.id===m.id?' on':'');
+    b.innerHTML=`<span>${m.name}</span><span class="bal">${fmt(eff('m',m))} ${SIGN}</span>`;
+    b.onclick=()=>{money=m;drawMoney();refresh()};
+    $('#money').appendChild(b);
+  });
+}
+
+const curOb=()=>obPick?D(obPick):null;
+
+function refresh(){
+  const c=CFG[kind], a=AMT();
+  let extra='', ok=true, hint='';
+
+  if(kind.startsWith('prop_')&&obj&&obj.t==='p'){
+    const base=eff('p',obj.o);
+    if(kind==='prop_revalue'){
+      const d=a-base;
+      extra=`<div class="sum ${d<0?'warn':''}"><span>${d>=0?'Дороже на':'Дешевле на'}</span><b>${fmt(Math.abs(d))} ${SIGN}</b></div>
+        <div class="op-s" style="margin-top:9px">Сейчас в учёте ${fmt(base)} ${SIGN}. Разница уйдёт в капитал — движения денег нет.</div>`;
+      ok=a>0&&Math.abs(d)>0.005;
+    }
+    if(kind==='prop_sell'){
+      const d=a-base;
+      extra=`<div class="sum ${d<0?'warn':''}"><span>${d>=0?'Прибыль':'Убыток'}</span><b>${fmt(Math.abs(d))} ${SIGN}</b></div>
+        <div class="op-s" style="margin-top:9px">В учёте вещь стоит ${fmt(base)} ${SIGN}. Разница уйдёт в капитал.</div>`;
+      ok=a>0;
+    }
+    if(kind==='prop_writeoff') hint=`Спишется вся стоимость — ${fmt(base)} ${SIGN}. Денег не поступит.`;
+  }
+  if(kind==='prop_buy') ok = a>0 && $('#fname').value.trim()!=='';
+
+  if(c.ctr){
+    const name=ctrPick||$('#ctrNew').value.trim();
+    const ob=curOb();
+    if(c.ob==='pick'){
+      ok = a>0 && !!ob;
+      if(ob){
+        const base=eff('d',ob), rest=base-a;
+        extra=`<div class="sum ${rest<-0.005?'warn':''}"><span>${rest<-0.005?'Больше долга на':'Останется долга'}</span>
+          <b>${fmt(Math.abs(rest))} ${SIGN}</b></div>`;
+        if(rest<-0.005)hint='Долг уйдёт в минус. Так бывает, если операция заведена раньше — сохранить можно.';
+      }
+    } else {
+      const nameOk = !!name;
+      const obOk = !!ob || $('#obNew').value.trim()!=='';
+      ok = a>0 && nameOk && obOk;
+      if(!obOk&&nameOk)hint='Выберите обязательство или впишите название нового';
+    }
+  }
+  $('#amtExtra').innerHTML=extra;
+  $('#hint').textContent=hint;
+  $('#save').disabled=!ok;
+  if(!$('#ledger').hidden)drawLedger();
+}
+
+/* ═══ проводки ═══ */
+function lines(){
+  const a=AMT();
+  const P0=obj&&obj.t==='p'?obj.o:null;
+  const base=P0?eff('p',P0):0;
+  const ob=curOb();
+  const cn=ctrPick||$('#ctrNew').value.trim()||'контрагент';
+  const on=ob?ob.title:($('#obNew').value.trim()||'новое обязательство');
+  const full=cn+' · '+on;
+  switch(kind){
+    case 'prop_buy': return a?[{s:'Д',a:'Имущество · '+($('#fname').value.trim()||'новый объект'),m:a,t:'Покупка имущества'},
+                               {s:'К',a:'Деньги · '+money.name,m:a}]:[];
+    case 'prop_revalue':{ if(!P0||!a)return[]; const d=a-base; if(Math.abs(d)<0.005)return[];
+      return d>0?[{s:'Д',a:'Имущество · '+P0.name,m:d},{s:'К',a:REV,m:d}]
+                :[{s:'Д',a:REV,m:-d},{s:'К',a:'Имущество · '+P0.name,m:-d}]; }
+    case 'prop_sell':{ if(!P0||!a)return[]; const d=a-base;
+      const L=[{s:'Д',a:'Деньги · '+money.name,m:a,t:'Продажа имущества'}];
+      if(d<0)L.push({s:'Д',a:CAP,m:-d});
+      L.push({s:'К',a:'Имущество · '+P0.name,m:base});
+      if(d>0)L.push({s:'К',a:CAP,m:d});
+      return L; }
+    case 'prop_writeoff': return P0?[{s:'Д',a:CAP,m:base},{s:'К',a:'Имущество · '+P0.name,m:base}]:[];
+    case 'loan_give':   return a?[{s:'Д',a:'Дебитор · '+full,m:a,t:'Выдача займа'},
+                                  {s:'К',a:'Деньги · '+money.name,m:a}]:[];
+    case 'loan_return': return a&&ob?[{s:'Д',a:'Деньги · '+money.name,m:a},
+                                      {s:'К',a:'Дебитор · '+full,m:a,t:'Возврат займа'}]:[];
+    case 'debt_take':   return a?[{s:'Д',a:'Деньги · '+money.name,m:a},
+                                  {s:'К',a:'Кредитор · '+full,m:a,t:'Получение займа'}]:[];
+    case 'debt_repay':  return a&&ob?[{s:'Д',a:'Кредитор · '+full,m:a,t:'Гашение долга'},
+                                      {s:'К',a:'Деньги · '+money.name,m:a}]:[];
+  }
+  return [];
+}
+function drawLedger(){
+  const L=lines();
+  if(!L.length){$('#ledger').innerHTML='<span class="k">заполните форму</span>';return}
+  const d=L.filter(l=>l.s==='Д').reduce((x,l)=>x+l.m,0);
+  const c=L.filter(l=>l.s==='К').reduce((x,l)=>x+l.m,0);
+  $('#ledger').innerHTML=`<div class="k">transaction · kind=${kind} · ${$('#date').value} · контур RUB</div><hr>
+    <table>${L.map(l=>`<tr><td class="${l.s==='Д'?'d':'c'}">${l.s}</td>
+      <td>&nbsp;${l.a}${l.t?` <span class="k">[${l.t}]</span>`:''}</td>
+      <td class="n">${fmt(l.m)} RUB</td></tr>`).join('')}</table><hr>
+    <div class="inv"><span>Σ base(Д) = Σ base(К)</span>
+      <span>${fmt(d)} = ${fmt(c)} ${Math.abs(d-c)<0.005?'✓':'✗'}</span></div>`;
+}
+
+/* ═══ сохранение ═══ */
+function save(){
+  if(editId){ const old=hist.find(x=>x.id===editId); apply(old,-1); hist=hist.filter(x=>x.id!==editId); }
+  const a=AMT(), dt=$('#date').value, note2=$('#fnote').value.trim();
+  const P0=obj&&obj.t==='p'?obj.o:null;
+  const cn=ctrPick||$('#ctrNew').value.trim();
+  let r={id:editId||seq++, kind, date:dt, moneyId:money.id, note2};
+
+  const obligation=(kd)=>{
+    let ob=curOb();
+    if(!ob){ ob={id:Date.now(),ctr:cn,title:$('#obNew').value.trim()||'Заём',kind:kd,bal:0}; DEBT.push(ob); }
+    return ob;
+  };
+
+  switch(kind){
+    case 'prop_buy':{ const p={id:Date.now(),name:$('#fname').value.trim(),bal:0,last:dt}; PROP.push(p);
+      Object.assign(r,{propId:p.id,amt:a,title:'Покупка · '+p.name,sign:-1,note:money.name}); break; }
+    case 'prop_revalue':{ r.propId=P0.id; r.delta=a-eff('p',P0); r.amt=Math.abs(r.delta);
+      r.title='Переоценка · '+P0.name; r.sign=r.delta>=0?1:-1;
+      r.note=r.delta>=0?'подорожало':'подешевело'; P0.last=dt; break; }
+    case 'prop_sell':{ const cost=eff('p',P0);
+      Object.assign(r,{propId:P0.id,amt:a,cost,title:'Продажа · '+P0.name,sign:1,
+        note:(a-cost>=0?'прибыль ':'убыток ')+fmt(Math.abs(a-cost))}); break; }
+    case 'prop_writeoff':{ const cost=eff('p',P0);
+      Object.assign(r,{propId:P0.id,amt:cost,cost,title:'Списание · '+P0.name,sign:-1,
+        note:note2||'списано'}); r.moneyId=null; break; }
+    case 'loan_give':{ const ob=obligation('owe');
+      Object.assign(r,{debtId:ob.id,amt:a,title:'Выдан заём · '+ob.ctr,sign:-1,note:ob.title}); break; }
+    case 'loan_return':{ const ob=curOb();
+      Object.assign(r,{debtId:ob.id,amt:a,title:'Возврат от дебитора · '+ob.ctr,sign:1,note:ob.title}); break; }
+    case 'debt_take':{ const ob=obligation('debt');
+      Object.assign(r,{debtId:ob.id,amt:a,title:'Получен заём · '+ob.ctr,sign:1,note:ob.title}); break; }
+    case 'debt_repay':{ const ob=curOb();
+      Object.assign(r,{debtId:ob.id,amt:a,title:'Погашение долга · '+ob.ctr,sign:-1,note:ob.title}); break; }
+  }
+  apply(r,1); hist.unshift(r);
+  toast(editId?'Изменения сохранены':'Записано');
+  editId=null; closeForm(); drawMain();
+  if(!$('#obj').hidden){
+    if(r.propId)openObj('p'+r.propId);
+    else {const d=D(r.debtId); openObj('c'+d.kind+'|'+d.ctr);}
+  }
+}
+function closeForm(){editId=null;$('#form').hidden=true; if($('#obj').hidden)document.body.style.overflow=''}
+
+/* ═══ события ═══ */
+$('#plus').onclick=()=>{$('#sheet').hidden=false};
+$('#sheet').onclick=e=>{if(e.target.id==='sheet')$('#sheet').hidden=true};
+document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{$('#sheet').hidden=true;obj=null;openForm(b.dataset.a)});
+$('#objBack').onclick=()=>{$('#obj').hidden=true;document.body.style.overflow='';obj=null;drawMain()};
+$('#close').onclick=closeForm;
+$('#save').onclick=save;
+['amt','fname','ctrNew','obNew','fnote'].forEach(i=>$('#'+i).addEventListener('input',()=>{
+  if(i==='ctrNew'&&$('#ctrNew').value.trim()){ctrPick=null;obPick=null;drawCtr();drawOb()}
+  if(i==='obNew'&&$('#obNew').value.trim()){obPick=null;drawOb()}
+  refresh();
+}));
+$('#ledToggle').onclick=()=>{
+  const l=$('#ledger');l.hidden=!l.hidden;
+  $('#ledToggle').textContent=l.hidden?'▸ показать проводку':'▾ скрыть проводку';
+  if(!l.hidden)drawLedger();
+};
+drawMain();
+</script>
+</body>
+</html>
